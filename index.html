@@ -1,0 +1,2360 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VX-11 Nocturne</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#040506;
+  --ink:#e9e6df;
+  --dim:rgba(233,230,223,.46);
+  --faint:rgba(233,230,223,.16);
+  --amber:#ff8a3d;
+  --cold:#9fd4ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:400;overflow-x:hidden}
+#c{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;cursor:grab}
+body.dragging #c{cursor:grabbing}
+body.hot #c{cursor:grab}
+body.grabbing,body.grabbing #c{cursor:grabbing}
+#hint{position:absolute;left:50%;bottom:112px;transform:translate(-50%,6px);text-align:center;opacity:0;transition:opacity .8s ease,transform .8s ease;font-size:10.5px;letter-spacing:.34em;color:var(--ink);white-space:nowrap}
+#hint span{display:block;margin-top:7px;font-size:10px;letter-spacing:.12em;color:var(--dim);text-transform:none}
+#hint.on{opacity:1;transform:translate(-50%,0)}
+#hint em{font-style:normal}
+#hint i{display:inline-block;width:18px;height:1px;background:var(--amber);vertical-align:middle;margin:0 12px}
+#scroll{height:700vh;position:relative;z-index:1;pointer-events:none}
+#hud{position:fixed;inset:0;z-index:2;pointer-events:none;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.tl{position:absolute;left:40px;top:34px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:10.5px;letter-spacing:.22em}
+.brand i{width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber);animation:blink 2.6s infinite}
+@keyframes blink{0%,70%,100%{opacity:1}78%{opacity:.25}}
+.name{font-family:Syncopate,sans-serif;font-weight:700;font-size:30px;letter-spacing:.34em;margin-top:12px;line-height:1}
+.sub{color:var(--dim);margin-top:10px;font-size:10px;letter-spacing:.18em}
+.tr{position:absolute;right:40px;top:34px;width:236px}
+.row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:9px 0;border-top:1px solid var(--faint)}
+.row:first-child{border-top:0;padding-top:0}
+.row b{font-weight:400;color:var(--dim);font-size:10px;letter-spacing:.18em}
+.row span{font-variant-numeric:tabular-nums;font-size:11px}
+.row .bar{grid-column:1/-1;height:2px;background:var(--faint);position:relative;overflow:hidden}
+.row .bar em{position:absolute;left:0;top:0;bottom:0;background:var(--ink);width:40%;transition:width .25s linear}
+.row .bar em.a{background:var(--amber)}
+.ok{color:var(--cold)}
+.bl{position:absolute;left:40px;bottom:38px;max-width:360px}
+.idx{font-family:Syncopate,sans-serif;font-size:46px;font-weight:400;letter-spacing:.06em;line-height:1}
+.idx small{font-size:12px;color:var(--dim);letter-spacing:.2em;margin-left:8px;vertical-align:top;position:relative;top:6px}
+#sect{margin-top:14px;font-size:12px;letter-spacing:.3em}
+#secd{margin-top:8px;color:var(--dim);text-transform:none;letter-spacing:.02em;font-size:12px;line-height:1.6;font-weight:300}
+.fade{transition:opacity .45s ease,transform .45s ease}
+.fade.out{opacity:0;transform:translateY(6px)}
+.rail{position:absolute;right:40px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;pointer-events:auto}
+.rail button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;justify-content:flex-end;color:var(--dim);font-size:10px;letter-spacing:.2em;padding:2px 0}
+.rail button i{display:block;width:14px;height:1px;background:var(--dim);transition:width .4s ease,background .4s}
+.rail button span{opacity:0;transition:opacity .3s}
+.rail button:hover span,.rail button.on span{opacity:1}
+.rail button.on{color:var(--ink)}
+.rail button.on i{width:34px;background:var(--amber)}
+.rail button:focus-visible{outline:1px solid var(--amber);outline-offset:4px}
+.brh{position:absolute;right:40px;bottom:38px;color:var(--dim);font-size:10px;letter-spacing:.24em;text-align:right;line-height:1.9}
+.brh b{color:var(--ink);font-weight:400}
+#lead{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transition:opacity .3s}
+#lead line{stroke:rgba(233,230,223,.55);stroke-width:1}
+#lead circle{fill:none;stroke:var(--amber);stroke-width:1}
+#lead .core{fill:var(--amber);stroke:none}
+#callout{position:absolute;left:0;top:0;min-width:220px;padding:10px 12px;border-left:1px solid var(--amber);background:linear-gradient(90deg,rgba(4,5,6,.72),rgba(4,5,6,0));opacity:0;transition:opacity .3s}
+#callout b{display:block;font-weight:500;font-size:11px;letter-spacing:.22em}
+#callout span{display:block;margin-top:5px;color:var(--dim);font-size:10px;letter-spacing:.12em}
+#callout.on{opacity:1}
+#callout.cool{border-left-color:var(--cold)}
+#lead path{fill:none;stroke:rgba(190,225,255,.85);stroke-width:1;transition:opacity .2s}
+#lead.cool circle{stroke:var(--cold)}
+#lead.cool .core{fill:var(--cold)}
+body.locked #c{cursor:not-allowed}
+#card{position:absolute;left:40px;top:150px;width:304px;padding:14px 18px 14px 18px;background:linear-gradient(90deg,rgba(5,7,9,.88),rgba(5,7,9,.62) 68%,rgba(5,7,9,0));pointer-events:auto;opacity:0;visibility:hidden;transform:translateX(-12px);transition:opacity .3s ease,transform .5s cubic-bezier(.2,.7,.2,1),visibility 0s .5s;text-transform:none;letter-spacing:.04em;--acc:var(--cold)}
+#card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:1px;background:linear-gradient(var(--acc),rgba(159,212,255,.28) 40%,rgba(159,212,255,.08));transform-origin:top;transform:scaleY(0);transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+#card::after{content:"";position:absolute;left:0;top:0;width:110px;height:1px;background:linear-gradient(90deg,var(--acc),rgba(159,212,255,0));transform-origin:left;transform:scaleX(0);transition:transform .5s cubic-bezier(.2,.7,.2,1) .12s}
+#card.on{opacity:1;visibility:visible;transform:none;transition:opacity .3s ease,transform .5s cubic-bezier(.2,.7,.2,1)}
+#card.on::before{transform:scaleY(1)}#card.on::after{transform:scaleX(1)}
+#card.on>*{animation:cin .55s cubic-bezier(.2,.7,.2,1) both}
+#card.on>:nth-child(2){animation-delay:.05s}#card.on>:nth-child(3){animation-delay:.09s}#card.on>:nth-child(4){animation-delay:.14s}#card.on>:nth-child(5){animation-delay:.2s}#card.on>:nth-child(6){animation-delay:.26s}
+@keyframes cin{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+#card.warn{--acc:var(--amber)}
+#card .ch{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase;gap:8px}
+#card .ch>span:first-child{display:flex;align-items:center;gap:8px;min-width:0}
+#cardCat{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cardState{flex:none;font-size:8px;letter-spacing:.2em;padding:2px 5px 1px;border:1px solid currentColor;color:var(--cold);line-height:1.3}
+#cardState:empty{display:none}#cardState.amber{color:var(--amber)}
+#card .nav{display:flex;gap:2px;flex:none}#card .nav button{all:unset;cursor:pointer;width:18px;height:18px;text-align:center;line-height:18px;color:var(--dim);font-size:13px;transition:color .2s}
+#card .nav button:hover{color:var(--ink)}#card .nav button:disabled{opacity:.22;cursor:default}#card .nav button:focus-visible{outline:1px solid var(--cold)}
+#card h3{font-family:Syncopate,sans-serif;font-weight:700;font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;margin-top:11px;line-height:1.38;text-wrap:balance}
+#card .cid{font-size:9.5px;letter-spacing:.24em;color:var(--acc);margin-top:5px;display:flex;align-items:center;gap:8px}
+#card .cid i{flex:1;height:1px;background:linear-gradient(90deg,rgba(159,212,255,.28),rgba(159,212,255,.04))}#card .cid .cls{color:var(--dim);font-size:8.5px;letter-spacing:.22em;text-transform:uppercase}
+#card p{margin-top:10px;font-size:11.5px;line-height:1.58;color:rgba(233,230,223,.72);font-weight:300;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}
+#card dl{display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin-top:12px;padding-top:10px;border-top:1px solid var(--faint);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+#card dt{color:var(--dim)}#card dd{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+#card .bar{grid-column:1/-1;display:block;height:1px;background:var(--faint);position:relative;margin-top:-3px}#card .bar em{position:absolute;left:0;top:-.5px;bottom:-.5px;background:var(--acc);box-shadow:0 0 6px var(--acc);transition:width .25s linear}
+#cardDeps:not(:empty){border-top:1px solid var(--faint);margin-top:12px}
+#card .dep{margin-top:9px;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;display:flex;flex-wrap:wrap;gap:4px 12px;line-height:1.45}
+#card .dep b{width:100%;font-weight:400;color:var(--dim);letter-spacing:.22em;font-size:8.5px}#card .dep span.done{color:var(--dim);text-decoration:line-through}
+#card .dep span.next{color:var(--amber)}#card .dep span.next::before{content:"A  "}
+#card .dep.steps{counter-reset:st}#card .dep.steps span{counter-increment:st;width:100%}#card .dep.steps span::before{content:counter(st,decimal-leading-zero) "  ";color:var(--dim)}#card .dep.steps span.next::before{content:counter(st,decimal-leading-zero) "  ";color:var(--amber)}
+#lead #cardLink{fill:none;stroke:var(--cold);stroke-width:1;stroke-dasharray:2 3;opacity:0;transition:opacity .35s}#lead #cardLink.on{opacity:.6}
+#ftag{position:absolute;left:0;top:0;font-size:9px;letter-spacing:.2em;color:var(--cold);opacity:0;transition:opacity .3s;white-space:nowrap}#ftag.on{opacity:1}
+body.focused .bl{opacity:.18}.bl{transition:opacity .4s}
+@media (max-width:900px){#card{left:14px;top:84px;width:250px}}
+#ctrl{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:9px;pointer-events:auto;font-size:9.5px;letter-spacing:.2em}
+#ctrl .cr{display:flex;align-items:center;gap:22px}
+#ctrl .cg{display:flex;align-items:center;gap:12px}
+#ctrl .cg+.cg{padding-left:22px;border-left:1px solid var(--faint)}
+#ctrl b{font-weight:400;color:var(--dim);opacity:.75;margin-right:2px}
+#poses{display:flex;gap:12px}
+#ctrl button{all:unset;cursor:pointer;color:var(--dim);padding:3px 0;border-bottom:1px solid transparent;transition:color .25s,border-color .25s;white-space:nowrap}
+#ctrl button:hover{color:var(--ink)}
+#ctrl button.on{color:var(--ink);border-bottom-color:var(--amber)}
+#ctrl button:focus-visible{outline:1px solid var(--amber);outline-offset:3px}
+@media (max-width:1240px){#secd{display:none}.brh{display:none}}
+#loader{position:fixed;inset:0;z-index:5;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity 1.2s ease}
+#loader.hide{opacity:0;pointer-events:none}
+#loader .t{font-size:10px;letter-spacing:.4em;color:var(--dim)}
+#loader .l{width:160px;height:1px;background:var(--faint);overflow:hidden;position:relative}
+#loader .l::after{content:"";position:absolute;inset:0;width:40%;background:var(--amber);animation:ld 1.1s ease-in-out infinite}
+@keyframes ld{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+#err{display:none;position:fixed;inset:0;z-index:6;align-items:center;justify-content:center;color:var(--dim);font-size:12px;letter-spacing:.1em;text-align:center;padding:20px}
+.intro-hide{opacity:0;transition:opacity 1.4s ease}
+.intro-hide.show{opacity:1}
+@media (max-width:900px){
+  .tl{left:18px;top:18px}.name{font-size:20px}
+  .tr{right:18px;top:18px;width:170px}.row:nth-child(n+4){display:none}
+  .bl{left:18px;bottom:22px;max-width:70vw}.idx{font-size:32px}
+  .rail{right:14px}.rail button span{display:none}
+  .brh{display:none}
+  #hint{bottom:150px}
+  #ctrl{bottom:14px;font-size:8.5px}#ctrl .cr{flex-wrap:wrap;justify-content:center;gap:10px}#ctrl .cg+.cg{border:0;padding:0}#poses{flex-wrap:wrap;justify-content:center}
+  .bl{bottom:120px}
+}
+@media (max-width:620px){
+  .sub{display:none}
+  .tr{top:auto;bottom:150px;right:18px;width:150px}.row:nth-child(n+3){display:none}
+  .rail{display:none}
+}
+@media (prefers-reduced-motion:reduce){.brand i{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Интерактивная 3D-сцена: прототип VX-11 Nocturne"></canvas>
+<div id="scroll"></div>
+
+<div id="hud">
+  <svg id="lead"><path id="cardLink" d=""/><path id="brk" d=""/><line id="ll" x1="0" y1="0" x2="0" y2="0"/><circle id="lc" r="7"/><circle id="ld" class="core" r="2"/></svg>
+  <div id="callout"><b id="cot"></b><span id="cod"></span></div>
+  <div id="ftag"></div>
+  <aside id="card" aria-live="polite">
+    <div class="ch"><span><span id="cardCat"></span><span id="cardState"></span></span><span class="nav"><button id="cardPrev" aria-label="Previous component">‹</button><button id="cardNext" aria-label="Next component">›</button><button id="cardClose" aria-label="Close">×</button></span></div>
+    <h3 id="cardTitle"></h3><div id="cardId" class="cid"></div>
+    <p id="cardDesc"></p>
+    <dl id="cardRows"></dl>
+    <div id="cardDeps"></div>
+  </aside>
+  <div id="hint"><i></i><em id="hintT">Grab // inspect // manipulate</em><i></i><span id="hintS"></span></div>
+  <div id="ctrl" class="intro-hide">
+    <div class="cr">
+      <div class="cg"><b>Mode</b><button data-mode="inspect" class="on">Inspect</button><button data-mode="assembly">Assembly</button></div>
+      <div class="cg"><button id="explode">Exploded view</button></div>
+      <div class="cg"><button id="reset">Reset machine</button></div>
+    </div>
+    <div class="cr">
+      <div class="cg"><b>Pose</b><span id="poses"></span></div>
+      <div class="cg"><button id="hold" title="Keep manual edits after release, then save them">Hold edits</button><button id="save">Save pose</button></div>
+    </div>
+  </div>
+
+  <div class="tl intro-hide">
+    <div class="brand"><i></i>PROTOTYPE // VX-11</div>
+    <div class="name">NOCTURNE</div>
+    <div class="sub">Autonomous quadruped · build 0.9.3 · lab 04</div>
+  </div>
+
+  <div class="tr intro-hide" id="tele">
+    <div class="row"><b>System status</b><span class="ok" id="t-sys">BOOT</span></div>
+    <div class="row"><b>Kinetic core</b><span id="t-core">0 rpm</span><div class="bar"><em class="a" id="b-core"></em></div></div>
+    <div class="row"><b>Servo load</b><span id="t-servo">0%</span><div class="bar"><em id="b-servo"></em></div></div>
+    <div class="row"><b>Thermal</b><span id="t-therm">0.0°C</span><div class="bar"><em id="b-therm"></em></div></div>
+    <div class="row"><b>Optical array</b><span id="t-opt">OFFLINE</span></div>
+  </div>
+
+  <div class="bl intro-hide">
+    <div class="idx"><span id="secn">01</span><small>/ 06</small></div>
+    <div class="fade" id="secwrap"><div id="sect">Reveal</div><div id="secd"></div></div>
+  </div>
+
+  <nav class="rail intro-hide" id="rail" aria-label="Разделы"></nav>
+  <div class="brh intro-hide"><b>Drag part</b> — manipulate<br><b>Drag space</b> — orbit<br><b>Dbl-click</b> — focus · Esc<br><b>Wheel</b> — zoom · Shift in inspect</div>
+</div>
+
+<div id="loader"><div class="t">Initializing VX-11</div><div class="l"></div></div>
+<div id="err">WebGL недоступен в этом браузере.<br>Откройте страницу в свежем Chrome / Edge / Firefox.</div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+// ============================================================ utils
+const D = Math.PI / 180;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t * t * t * (t * (t * 6 - 15) + 10);
+const damp = (a, b, l, dt) => lerp(a, b, 1 - Math.exp(-l * dt));
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const V = () => new THREE.Vector3();
+const _v1 = V(), _v2 = V(), _v3 = V(), _q = new THREE.Quaternion();
+
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+scrollTo(0, 0);
+const canvas = document.getElementById('c');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+} catch (e) { document.getElementById('err').style.display = 'flex'; throw e; }
+let PR = Math.min(devicePixelRatio, 1.75);
+renderer.setPixelRatio(PR);
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x040506);
+scene.fog = new THREE.FogExp2(0x040506, 0.052);
+const camera = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.05, 80);
+
+try { await Promise.race([document.fonts.load('500 20px "JetBrains Mono"'), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
+
+// ============================================================ procedural textures
+function canvasTex(w, h, draw, { repeat = [1, 1], srgb = false } = {}) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); draw(g, w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...repeat); t.anisotropy = 8;
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+function noiseFill(g, w, h, base, amp) {
+  g.fillStyle = base; g.fillRect(0, 0, w, h);
+  const id = g.getImageData(0, 0, w, h), d = id.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (rnd() - .5) * amp; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  g.putImageData(id, 0, 0);
+}
+// wear: roughness variation, smudges, fine scratches
+const wearTex = canvasTex(512, 512, (g, w, h) => {
+  noiseFill(g, w, h, '#c4c4c4', 22);
+  for (let i = 0; i < 46; i++) {
+    const x = rnd() * w, y = rnd() * h, r = 18 + rnd() * 70;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    const v = rnd() < .55 ? '255,255,255' : '80,80,80';
+    gr.addColorStop(0, `rgba(${v},.13)`); gr.addColorStop(1, `rgba(${v},0)`);
+    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  for (let i = 0; i < 170; i++) {
+    const x = rnd() * w, y = rnd() * h, a = rnd() * Math.PI, l = 3 + rnd() * 26;
+    g.strokeStyle = `rgba(${rnd() < .6 ? '255,255,255' : '50,50,50'},${.12 + rnd() * .3})`;
+    g.lineWidth = rnd() < .8 ? .6 : 1.2;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
+  }
+});
+const brushTex = canvasTex(512, 512, (g, w, h) => {
+  noiseFill(g, w, h, '#9c9c9c', 10);
+  for (let i = 0; i < 2600; i++) {
+    const y = rnd() * h, v = 110 + rnd() * 130 | 0, x = rnd() * w;
+    g.strokeStyle = `rgba(${v},${v},${v},${.06 + rnd() * .12})`; g.lineWidth = .3 + rnd();
+    g.beginPath(); g.moveTo(x - 240, y); g.lineTo(x + 240, y); g.stroke();
+  }
+}, { repeat: [2, 2] });
+const carbonTex = canvasTex(256, 256, (g, w, h) => {
+  const s = 16;
+  for (let y = 0; y < h / s; y++) for (let x = 0; x < w / s; x++) {
+    const horiz = Math.floor((x + y) / 2) % 2 === 0;
+    const gr = horiz ? g.createLinearGradient(0, y * s, 0, y * s + s) : g.createLinearGradient(x * s, 0, x * s + s, 0);
+    gr.addColorStop(0, '#0d0e10'); gr.addColorStop(.5, '#34373c'); gr.addColorStop(1, '#0d0e10');
+    g.fillStyle = gr; g.fillRect(x * s, y * s, s, s);
+  }
+}, { repeat: [6, 6], srgb: true });
+function decalTex(draw, w = 512, h = 128) {
+  const t = canvasTex(w, h, (g, W, H) => { g.clearRect(0, 0, W, H); draw(g, W, H); }, { srgb: true });
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
+}
+const MONO = '"JetBrains Mono", monospace';
+const decals = {
+  id: decalTex((g) => {
+    g.fillStyle = 'rgba(225,222,214,.85)'; g.font = `500 64px ${MONO}`; g.fillText('VX-11', 8, 76);
+    g.font = `400 20px ${MONO}`; g.fillStyle = 'rgba(225,222,214,.55)'; g.fillText('NOCTURNE / LAB 04', 12, 110);
+    g.fillStyle = 'rgba(255,138,61,.9)'; g.fillRect(250, 30, 6, 52);
+    for (let i = 0; i < 18; i++) { g.fillStyle = 'rgba(225,222,214,.5)'; g.fillRect(280 + i * 12, 40, i % 3 ? 3 : 6, 34); }
+  }),
+  warn: decalTex((g) => {
+    for (let i = -2; i < 12; i++) { g.fillStyle = 'rgba(255,138,61,.8)'; g.beginPath(); g.moveTo(i * 40, 0); g.lineTo(i * 40 + 20, 0); g.lineTo(i * 40 - 20, 40); g.lineTo(i * 40 - 40, 40); g.fill(); }
+    g.clearRect(160, 0, 400, 40);
+    g.fillStyle = 'rgba(225,222,214,.75)'; g.font = `500 22px ${MONO}`; g.fillText('HYDRAULIC · 280 BAR', 170, 29);
+    g.font = `400 18px ${MONO}`; g.fillStyle = 'rgba(225,222,214,.45)'; g.fillText('DO NOT SERVICE UNDER LOAD', 10, 80);
+  }),
+  num: decalTex((g) => { g.fillStyle = 'rgba(225,222,214,.7)'; g.font = `500 88px ${MONO}`; g.fillText('07', 10, 92); g.fillStyle = 'rgba(255,138,61,.85)'; g.fillRect(140, 20, 4, 80); g.font = `400 18px ${MONO}`; g.fillStyle = 'rgba(225,222,214,.5)'; g.fillText('SRV-ARRAY', 160, 50); g.fillText('ΔT 4.1', 160, 80); }, 256, 128),
+  code: decalTex((g) => { for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(225,222,214,${.3 + (i % 5 === 0 ? .4 : 0)})`; g.fillRect(8 + i * 11, 20, (i * 7) % 3 + 2, 60); } g.font = `400 18px ${MONO}`; g.fillStyle = 'rgba(225,222,214,.5)'; g.fillText('SN 0911-A7-00432', 10, 110); }),
+};
+
+// ============================================================ materials + shader hooks (scanner line, hover highlight)
+const FX = {
+  uScanX: { value: -99 }, uScanAmt: { value: 0 },
+  uHiPos: { value: new THREE.Vector3(0, -99, 0) }, uHiAmt: { value: 0 }, uHiR: { value: .3 }, uHiCol: { value: new THREE.Vector3(1, .52, .2) }, uTime: { value: 0 },
+};
+function patch(mat) {
+  mat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, FX);
+    sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
+      vec4 wp_ = vec4(transformed, 1.0);
+      #ifdef USE_INSTANCING
+        wp_ = instanceMatrix * wp_;
+      #endif
+      vWP = (modelMatrix * wp_).xyz;`);
+    sh.fragmentShader = 'varying vec3 vWP;\nuniform float uScanX, uScanAmt, uHiAmt, uHiR, uTime;\nuniform vec3 uHiPos, uHiCol;\n' +
+      sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      {
+        float sd = abs(vWP.x - uScanX);
+        float line = exp(-sd * sd * 2600.0);
+        float band = exp(-sd * sd * 30.0);
+        float rows = step(0.55, fract(vWP.y * 90.0));
+        totalEmissiveRadiance += vec3(0.55, 0.82, 1.0) * uScanAmt * (line * 1.3 + band * 0.012);
+        float hd = length(vWP - uHiPos);
+        float hi = smoothstep(uHiR, uHiR * 0.25, hd) * uHiAmt;
+        float fr = pow(1.0 - clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0), 2.0);
+        totalEmissiveRadiance += uHiCol * hi * (fr * 0.55 + 0.015);
+      }`);
+  };
+  mat.customProgramCacheKey = () => 'fx1';
+  return mat;
+}
+const PM = o => patch(new THREE.MeshPhysicalMaterial({ side: THREE.DoubleSide, shadowSide: THREE.BackSide, ...o }));
+const mats = {
+  // material separation: each family differs in more than one channel (value, metalness, roughness, coat, sheen), never in saturated hue
+  armor:   PM({ color: 0x30343a, metalness: .42, roughness: .46, roughnessMap: wearTex, clearcoat: .38, clearcoatRoughness: .32, specularIntensity: .75 }), // painted ceramic shell: coated sheen
+  stealth: PM({ color: 0x3b3b3c, metalness: .12, roughness: .8, roughnessMap: wearTex, specularIntensity: .5 }),                                   // matte composite: flat, no coat
+  ti:      PM({ color: 0x938f88, metalness: 1, roughness: .38, roughnessMap: brushTex }),                                                          // brushed titanium frame
+  anod:    PM({ color: 0x15171b, metalness: .9, roughness: .34, roughnessMap: wearTex, specularIntensity: 1 }),                                     // anodised housings: darker, tighter highlight
+  carbon:  PM({ color: 0xffffff, map: carbonTex, metalness: .35, roughness: .4, clearcoat: 1, clearcoatRoughness: .1 }),
+  chrome:  PM({ color: 0x9a9893, metalness: 1, roughness: .16 }),                                                                                 // piston rods: sharp mirror line
+  rubber:  PM({ color: 0x0d0d0e, metalness: 0, roughness: .92, sheen: .6, sheenRoughness: .75, sheenColor: 0x3a3e46 }),                            // cables / pads: soft grazing sheen, zero spec
+  brass:   PM({ color: 0xa87848, metalness: 1, roughness: .4 }),
+  glass:   PM({ color: 0x0b1016, metalness: .1, roughness: .02, clearcoat: 1, clearcoatRoughness: 0, transparent: true, opacity: .38, depthWrite: false }),
+};
+const EM = (hex, i) => patch(new THREE.MeshStandardMaterial({ color: 0x000000, emissive: hex, emissiveIntensity: i, side: THREE.DoubleSide }));
+const em = {
+  strip: EM(0xff7a2e, 0), eye: EM(0xffb070, 0), core: EM(0xff8a3a, 0), vent: EM(0xff4a14, 0), cold: EM(0x9fd4ff, 0), tail: EM(0xff7a2e, 0),
+};
+
+// ============================================================ geometry helpers
+function mk(geo, mat, parent, p = [0, 0, 0], r = [0, 0, 0], s) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(...p); m.rotation.set(...r);
+  if (s !== undefined) typeof s === 'number' ? m.scale.setScalar(s) : m.scale.set(...s);
+  const emissive = !mat.isMeshPhysicalMaterial && mat.isMeshStandardMaterial && mat.color.getHex() === 0;
+  m.castShadow = !emissive && !mat.transparent; m.receiveShadow = !mat.transparent;
+  parent.add(m); return m;
+}
+function grp(parent, p = [0, 0, 0], r = [0, 0, 0]) { const g = new THREE.Group(); g.position.set(...p); g.rotation.set(...r); parent.add(g); return g; }
+const lathe = (pts, segs = 32) => new THREE.LatheGeometry(pts.map(p => new THREE.Vector2(p[0], p[1])), segs);
+const toZ = g => { g.rotateX(Math.PI / 2); return g; };      // lathe axis +Y -> +Z
+const toNegX = g => { g.rotateZ(-Math.PI / 2); return g; };  // lathe axis -Y -> -X
+const rbox = (w, h, d, r = .01, s = 2) => new RoundedBoxGeometry(w, h, d, s, r);
+
+// superellipse loft: main surfacing tool (panels with real thickness, rims and seams)
+const se = (c, n) => Math.sign(c) * Math.pow(Math.abs(c), 2 / n);
+function loft({ len = 1, x0 = 0, rings = 20, segs = 20, prof, n = 2.4, a0 = 0, a1 = Math.PI * 2, thick = .012 }) {
+  const full = a1 - a0 >= Math.PI * 2 - 1e-4;
+  const pos = [], uv = [], idx = [];
+  const P = (t, th, ins) => {
+    const p = prof(t); const w = Math.max(p.w - ins, 1e-3), h = Math.max(p.h - ins, 1e-3);
+    return [x0 + t * len, (p.y || 0) + h * se(Math.sin(th), n), (p.z || 0) + w * se(Math.cos(th), n)];
+  };
+  const grid = (ins, flip) => {
+    const b = pos.length / 3;
+    for (let i = 0; i <= rings; i++) { const t = i / rings; for (let j = 0; j <= segs; j++) {
+      const th = a0 + (a1 - a0) * j / segs; pos.push(...P(t, th, ins)); uv.push(t * len * 3, (th - a0) * .35);
+    } }
+    for (let i = 0; i < rings; i++) for (let j = 0; j < segs; j++) {
+      const a = b + i * (segs + 1) + j, c = a + segs + 1;
+      flip ? idx.push(a, a + 1, c, c, a + 1, c + 1) : idx.push(a, c, a + 1, c, c + 1, a + 1);
+    }
+  };
+  grid(0, false); grid(thick, true);
+  const strip = (list, out) => {
+    const b = pos.length / 3;
+    list.forEach(([t, th], k) => { pos.push(...P(t, th, 0), ...P(t, th, thick)); uv.push(k * .05, 0, k * .05, .03); });
+    const A = P(...list[0], 0), B = P(...list[0], thick), C = P(...list[1], 0);
+    const e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], e2 = [C[0] - A[0], C[1] - A[1], C[2] - A[2]];
+    const nx = e1[1] * e2[2] - e1[2] * e2[1], ny = e1[2] * e2[0] - e1[0] * e2[2], nz = e1[0] * e2[1] - e1[1] * e2[0];
+    const d = out(...list[0]); const flip = nx * d[0] + ny * d[1] + nz * d[2] < 0;
+    for (let k = 0; k < list.length - 1; k++) { const a = b + 2 * k; flip ? idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3) : idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  };
+  const ths = [], ts = [];
+  for (let j = 0; j <= segs; j++) ths.push(a0 + (a1 - a0) * j / segs);
+  for (let i = 0; i <= rings; i++) ts.push(i / rings);
+  strip(ths.map(th => [0, th]), () => [-1, 0, 0]);
+  strip(ths.map(th => [1, th]), () => [1, 0, 0]);
+  if (!full) {
+    const dirTh = (t, th, s) => { const p = P(t, th, 0), q = P(t, th + s * .02, 0); return [q[0] - p[0], q[1] - p[1], q[2] - p[2]]; };
+    strip(ts.map(t => [t, a0]), (t, th) => dirTh(t, th, -1));
+    strip(ts.map(t => [t, a1]), (t, th) => dirTh(t, th, 1));
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+// a panel cut out of a profile: t-range x angle-range, grown outward (layering)
+function part(parent, prof, x0, len, ta, tb, a0d, a1d, grow, mat, o = {}) {
+  const span = tb - ta;
+  const g = loft({
+    x0: x0 + len * ta, len: len * span,
+    prof: t => { const p = prof(ta + span * t); return { w: p.w + grow, h: p.h + grow, y: p.y, z: p.z }; },
+    a0: a0d * D, a1: a1d * D, n: o.n ?? 2.4,
+    rings: o.rings ?? Math.max(3, Math.ceil(28 * span)), segs: o.segs ?? Math.max(3, Math.ceil((a1d - a0d) / 6)),
+    thick: o.thick ?? .012,
+  });
+  if (o.down) g.rotateZ(-Math.PI / 2);
+  return mk(g, mat, parent);
+}
+function surf(prof, x0, len, t, thd, grow = 0, n = 2.4) {
+  const th = thd * D;
+  const P = (t, th) => { const p = prof(t); return new THREE.Vector3(x0 + t * len, (p.y || 0) + (p.h + grow) * se(Math.sin(th), n), (p.z || 0) + (p.w + grow) * se(Math.cos(th), n)); };
+  const p = P(t, th), a = P(t + .01, th).sub(p), b = P(t, th + .01).sub(p);
+  return { p, n: a.cross(b).normalize() };
+}
+function orientTo(obj, nrm) { // local +Z along normal, local x along +/-X, y up
+  const z = nrm.clone().normalize();
+  const x = new THREE.Vector3(1, 0, 0).addScaledVector(z, -z.x).normalize();
+  const y = new THREE.Vector3().crossVectors(z, x);
+  if (y.y < 0) { x.negate(); y.negate(); }
+  obj.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+}
+const decalMat = tex => new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: .55, metalness: .1, polygonOffset: true, polygonOffsetFactor: -4 });
+function decalOn(parent, prof, x0, len, t, thd, grow, tex, w, h) {
+  const s = surf(prof, x0, len, t, thd, grow + .0015);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), decalMat(tex));
+  m.position.copy(s.p); orientTo(m, s.n); parent.add(m); return m;
+}
+function servoGeo(r, h) {
+  const base = lathe([[0, -h / 2], [r * .9, -h / 2], [r, -h / 2 + h * .14], [r, h / 2 - h * .14], [r * .92, h / 2], [r * .64, h / 2], [r * .6, h / 2 + h * .12], [r * .3, h / 2 + h * .14], [0, h / 2 + h * .12]], 40);
+  const parts = [base];
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2, b = new THREE.CylinderGeometry(r * .07, r * .07, h * .1, 6);
+    b.translate(Math.cos(a) * r * .78, h / 2 + h * .03, Math.sin(a) * r * .78); parts.push(b);
+  }
+  return toZ(mergeGeometries(parts));
+}
+function gearGeo(r, teeth, depth, th = .01, spokes = 5) {
+  const s = new THREE.Shape(), da = Math.PI * 2 / teeth;
+  for (let i = 0; i < teeth; i++) {
+    const a = i * da;
+    [[a, r], [a + da * .16, r + th], [a + da * .44, r + th], [a + da * .6, r]].forEach(([aa, rr], k) => {
+      const x = Math.cos(aa) * rr, y = Math.sin(aa) * rr; (i === 0 && k === 0) ? s.moveTo(x, y) : s.lineTo(x, y);
+    });
+  }
+  s.closePath();
+  const hub = new THREE.Path(); hub.absarc(0, 0, r * .2, 0, Math.PI * 2, true); s.holes.push(hub);
+  for (let k = 0; k < spokes; k++) { const a = k / spokes * Math.PI * 2, hp = new THREE.Path(); hp.absarc(Math.cos(a) * r * .58, Math.sin(a) * r * .58, r * .17, 0, Math.PI * 2, true); s.holes.push(hp); }
+  const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: depth * .18, bevelSize: Math.min(th * .25, .002), bevelSegments: 1, curveSegments: 10 });
+  g.translate(0, 0, -depth / 2); return g;
+}
+function ringGeo(R, w, t, segs = 72) { // band around Y
+  return lathe([[R - t / 2, -w / 2], [R + t / 2, -w / 2], [R + t / 2, w / 2], [R - t / 2, w / 2], [R - t / 2, -w / 2]], segs);
+}
+function bladeGeo(pts, depth, bevel = .002) {
+  const s = new THREE.Shape(); pts.forEach((p, i) => i ? s.lineTo(p[0], p[1]) : s.moveTo(p[0], p[1]));
+  const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 6 });
+  g.translate(0, 0, -depth / 2); return g;
+}
+
+// ============================================================ dynamic mechanics (world space)
+const creature = grp(scene);
+const mech = grp(scene); // pistons / cables / bellows, driven from bone anchors every frame
+class Piston {
+  constructor(a, b, r = .016, up = [0, 0, 1]) { this.a = a; this.b = b; this.r = r; this.g = grp(mech); this.g.up.set(...up); this.ok = false; }
+  build(d) {
+    const r = this.r, Lc = d * .58, Lr = d * .6;
+    mk(toZ(lathe([[0, -r * .4], [r * 1.3, -r * .4], [r * 1.3, r * .9], [r, r * 1.3], [r, Lc - r * 1.5], [r * 1.22, Lc - r * 1.2], [r * 1.22, Lc], [r * .62, Lc], [r * .6, Lc + r * .3], [0, Lc + r * .3]], 20)), mats.anod, this.g);
+    mk(toZ(lathe([[r * 1.02, 0], [r * 1.34, 0], [r * 1.34, r * .9], [r * 1.02, r * .9]], 18)), mats.brass, this.g, [0, 0, Lc * .74]);
+    mk(rbox(r * 2.2, r * 2.2, r * 1.6, r * .5), mats.ti, this.g);
+    this.rod = grp(this.g);
+    mk(toZ(lathe([[0, 0], [r * .56, 0], [r * .56, -Lr], [0, -Lr]], 16)), mats.chrome, this.rod);
+    mk(rbox(r * 1.8, r * 1.8, r * 1.4, r * .4), mats.ti, this.rod);
+    this.ok = true;
+  }
+  update() {
+    const A = this.a.getWorldPosition(_v1), B = this.b.getWorldPosition(_v2), d = A.distanceTo(B);
+    if (!this.ok) this.build(d);
+    this.g.position.copy(A); this.g.lookAt(B); this.rod.position.z = d;
+  }
+}
+class Cable {
+  constructor(a, b, r, sag, mat) { this.a = a; this.b = b; this.r = r; this.sag = sag; this.m = mk(new THREE.BufferGeometry(), mat, mech); this.c = null; this.vel = V(); this.curve = new THREE.QuadraticBezierCurve3(V(), V(), V()); }
+  update(dt) {
+    const A = this.a.getWorldPosition(this.curve.v0), B = this.b.getWorldPosition(this.curve.v2);
+    const mid = _v3.copy(A).add(B).multiplyScalar(.5); mid.y -= this.sag * A.distanceTo(B);
+    if (!this.c) this.c = mid.clone();
+    const acc = mid.sub(this.c).multiplyScalar(70).addScaledVector(this.vel, -6.5);
+    this.vel.addScaledVector(acc, dt); this.c.addScaledVector(this.vel, dt);
+    this.curve.v1.copy(this.c);
+    this.m.geometry.dispose(); this.m.geometry = new THREE.TubeGeometry(this.curve, 18, this.r, 6, false);
+  }
+}
+class Bellows {
+  constructor(a, b, R) {
+    this.a = a; this.b = b; this.g = grp(mech); this.g.up.set(0, 1, 0);
+    const pts = []; for (let k = 0; k <= 16; k++) pts.push([k % 2 ? R * .78 : R, k / 16]);
+    this.m = mk(toZ(lathe(pts, 24)), mats.rubber, this.g);
+  }
+  update() { const A = this.a.getWorldPosition(_v1), B = this.b.getWorldPosition(_v2); this.g.position.copy(A); this.g.lookAt(B); this.m.scale.set(1, 1, A.distanceTo(B)); }
+}
+const pistons = [], cables = [], bellows = [];
+const anchor = (parent, p) => grp(parent, p);
+
+// ============================================================ THE CREATURE
+const G = .08;               // platform height
+const BODY_Y = 1.0;
+const body = grp(creature, [0, BODY_Y, 0]);
+const chestG = grp(body, [.1, 0, 0]);
+const hipG = grp(body, [-.3, 0, 0]);
+
+// ---- chest -------------------------------------------------
+const chestProf = t => ({ w: .2 + .085 * Math.sin(Math.PI * Math.pow(t, .8)), h: .24 + .12 * Math.sin(Math.PI * t), y: -.03 - .06 * Math.sin(Math.PI * t) + .08 * t });
+const CX = [0, .85];
+const occ = []; // fixed structure that blocks picking of parts behind it
+occ.push(part(chestG, chestProf, ...CX, .02, .98, 52, 128, -.035, mats.anod));
+occ.push(part(chestG, chestProf, ...CX, .02, .98, 205, 335, -.035, mats.anod));
+const chestTop = [[0, .4, .014], [.32, .7, .019], [.62, 1, .024]].map(([a, b, gr]) => part(chestG, chestProf, ...CX, a, b, 63, 117, gr, mats.armor));
+const hatches = [];
+for (const s of [1, -1]) {
+  const hinge = grp(chestG, [.42, .27, s * .15]);
+  const inner = grp(hinge, [-.42, -.27, -s * .15]);
+  s > 0 ? part(inner, chestProf, ...CX, .06, .93, 22, 60, .008, mats.armor) : part(inner, chestProf, ...CX, .06, .93, 120, 158, .008, mats.armor);
+  decalOn(inner, chestProf, ...CX, .5, s > 0 ? 42 : 138, .02, decals.id, .2, .05);
+  hatches.push({ hinge, s, inner });
+  s > 0 ? part(inner, chestProf, ...CX, .08, .9, 18.6, 21, .016, em.strip, { thick: .004 }) : part(inner, chestProf, ...CX, .08, .9, 159, 161.4, .016, em.strip, { thick: .004 });
+}
+const ribs = [];
+for (const s of [1, -1]) for (let k = 0; k < 4; k++) {
+  const g = grp(chestG);
+  const a = .1 + k * .205, b = a + .15;
+  s > 0 ? part(g, chestProf, ...CX, a, b, -30, 17, .002, mats.stealth) : part(g, chestProf, ...CX, a, b, 163, 210, .002, mats.stealth);
+  ribs.push({ g, s, k });
+}
+const chestBelly = part(chestG, chestProf, ...CX, .14, .88, 232, 308, .004, mats.carbon);
+part(chestG, chestProf, ...CX, .84, 1, 205, 335, .01, mats.armor);
+const bellyDecal = decalOn(chestG, chestProf, ...CX, .5, 270, .016, decals.code, .22, .055);
+
+{ const e = chestProf(1); mk(new THREE.SphereGeometry(1, 32, 20), mats.anod, chestG, [.845, e.y, 0], [0, 0, 0], [.05, e.h - .02, e.w - .02]); }
+// kinetic core, visible between ribs and through hatches
+const coreG = grp(chestG, [.42, -.04, 0]);
+const coreBall = mk(new THREE.IcosahedronGeometry(.07, 4), em.core, coreG);
+mk(new THREE.SphereGeometry(.088, 32, 20), mats.glass, coreG);
+const gimbalA = grp(coreG), gimbalB = grp(gimbalA);
+mk(ringGeo(.125, .026, .012), mats.ti, gimbalA, [0, 0, 0], [Math.PI / 2, 0, 0]);
+mk(ringGeo(.152, .018, .01), mats.anod, gimbalB, [0, 0, 0], [0, 0, Math.PI / 2]);
+for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; mk(rbox(.014, .03, .014, .004), mats.brass, gimbalB, [0, Math.cos(a) * .152, Math.sin(a) * .152]); }
+const coreLight = new THREE.PointLight(0xff8a3a, 0, 1.4, 2); coreG.add(coreLight);
+const gears = [], gearSets = [];
+for (const s of [1, -1]) {
+  const gs = grp(chestG, [.25, .06, s * .19]); gearSets.push(gs);
+  const gA = mk(gearGeo(.058, 16, .014, .008), mats.ti, gs);
+  const gB = mk(gearGeo(.034, 9, .014, .008, 4), mats.brass, gs, [.058 + .034 + .006, .04, 0]);
+  const gC = mk(gearGeo(.046, 13, .012, .007), mats.anod, chestG, [.6, -.12, s * .2]);
+  gears.push({ m: gA, r: 1 }, { m: gB, r: -16 / 9 }, { m: gC, r: .7 });
+}
+for (const s of [1, -1]) {
+  mk(rbox(.62, .03, .03, .008), mats.carbon, chestG, [.42, .16, s * .12], [0, 0, .06]);
+  mk(rbox(.62, .03, .03, .008), mats.carbon, chestG, [.42, -.22, s * .12], [0, 0, -.05]);
+}
+
+// ---- hip ---------------------------------------------------
+const hipProf = t => ({ w: .16 + .07 * Math.sin(Math.PI * t), h: .17 + .075 * Math.sin(Math.PI * Math.pow(t, .9)), y: .03 + .03 * t });
+const HX = [-.62, .6];
+occ.push(part(hipG, hipProf, ...HX, .02, .98, 50, 130, -.03, mats.anod));
+occ.push(part(hipG, hipProf, ...HX, .02, .98, 210, 330, -.03, mats.anod));
+const haunches = [part(hipG, hipProf, ...HX, .12, .96, -38, 58, .012, mats.armor), part(hipG, hipProf, ...HX, .12, .96, 122, 218, .012, mats.armor)];
+const hipTops = [part(hipG, hipProf, ...HX, .04, .55, 63, 117, .016, mats.armor), part(hipG, hipProf, ...HX, .45, 1, 63, 117, .021, mats.armor)];
+part(hipG, hipProf, ...HX, 0, .16, -25, 205, .02, mats.stealth);
+part(hipG, hipProf, ...HX, .2, .85, 232, 308, .004, mats.carbon);
+part(hipG, hipProf, ...HX, .16, .9, 59.2, 61.6, .026, em.strip, { thick: .004 });
+part(hipG, hipProf, ...HX, .16, .9, 118.4, 120.8, .026, em.strip, { thick: .004 });
+const warnDecal = decalOn(hipG, hipProf, ...HX, .5, 30, .024, decals.warn, .19, .05);
+const numDecal = decalOn(hipG, hipProf, ...HX, .45, 150, .024, decals.num, .09, .045);
+
+// vents on the haunches (louvres + fan + heat grill)
+const vents = [];
+for (const s of [1, -1]) {
+  const sp = surf(hipProf, ...HX, .62, s > 0 ? 6 : 174, .024);
+  const v = grp(hipG); v.position.copy(sp.p); orientTo(v, sp.n);
+  mk(rbox(.2, .11, .03, .008), mats.anod, v);
+  mk(new THREE.PlaneGeometry(.17, .082), em.vent, v, [0, 0, .0152]);
+  const fan = grp(v, [0, 0, .016]);
+  const blades = [];
+  for (let i = 0; i < 7; i++) { const b = bladeGeo([[0, .004], [.034, .012], [.036, -.004], [0, -.004]], .002, .0008); b.rotateZ(i / 7 * Math.PI * 2); blades.push(b); }
+  mk(mergeGeometries(blades), mats.ti, fan);
+  mk(toZ(lathe([[0, 0], [.009, 0], [.009, .006], [0, .006]], 16)), mats.anod, fan);
+  const slats = [];
+  for (let i = 0; i < 5; i++) {
+    const p = grp(v, [0, -.04 + i * .02, .02]);
+    mk(rbox(.184, .019, .004, .0018), mats.armor, p);
+    slats.push(p);
+  }
+  vents.push({ v, fan, slats, s });
+}
+
+// ---- spine / waist ------------------------------------------
+const waistProf = t => ({ w: .16 + .025 * Math.sin(Math.PI * t) + .04 * t, h: .17 + .03 * t, y: .05 - .04 * t });
+const WX = [-.36, .5];
+const waistTop = [[0, .42, .004], [.3, .72, .009], [.6, 1, .014]].map(([a, b, gr], k) => part(body, waistProf, ...WX, a, b, 38, 142, gr, k === 1 ? mats.stealth : mats.armor));
+part(body, waistProf, ...WX, 0, 1, 232, 308, -.035, mats.carbon);
+const spineA = anchor(hipG, [.12, .15, 0]), spineB = anchor(chestG, [-.02, .17, 0]), spineC = anchor(body, [-.1, .23, 0]);
+const vertebrae = [];
+const vGeo = mergeGeometries([rbox(.075, .06, .05, .012), (() => { const g = bladeGeo([[-.025, 0], [.02, 0], [.012, .045], [-.015, .03]], .012, .002); g.translate(0, .02, 0); g.rotateY(Math.PI / 2); return g; })()]);
+for (let i = 0; i < 6; i++) vertebrae.push(mk(vGeo, i % 2 ? mats.anod : mats.ti, mech));
+for (const s of [1, -1]) {
+  pistons.push(new Piston(anchor(hipG, [.1, -.02, s * .11]), anchor(chestG, [.02, -.04, s * .11]), .02, [0, 1, 0]));
+  cables.push(new Cable(anchor(hipG, [.1, .07, s * .15]), anchor(chestG, [.04, .1, s * .16]), .011, .12, mats.rubber));
+  cables.push(new Cable(anchor(hipG, [.12, -.05, s * .16]), anchor(chestG, [.04, -.06, s * .17]), .008, .18, mats.anod));
+}
+bellows.push(new Bellows(anchor(hipG, [.14, -.13, 0]), anchor(chestG, [.02, -.16, 0]), .05));
+cables.push(new Cable(anchor(hipG, [.1, .12, .05]), anchor(chestG, [0, .14, .05]), .007, .08, mats.brass));
+
+// ---- neck + head -------------------------------------------
+const n1 = grp(chestG, [.8, .1, 0], [0, 0, .8]);
+const n2 = grp(n1, [.24, 0, 0], [0, 0, -.45]);
+const head = grp(n2, [.2, 0, 0]);
+const neckPlates = [];
+for (const [ng, len, w] of [[n1, .24, .135], [n2, .2, .115]]) {
+  mk(toNegX(lathe([[0, 0], [w * .5, 0], [w * .5, -len], [0, -len]], 20)).rotateY(Math.PI), mats.anod, ng);
+  const k = Math.round(len / .075);
+  for (let i = 0; i < k; i++) {
+    const pr = () => ({ w: w - i * .004, h: w + .005 - i * .004, y: 0 });
+    neckPlates.push(part(ng, pr, i * .07 - .01, .1, 0, 1, 18, 162, 0, i % 2 ? mats.stealth : mats.armor, { rings: 3 }));
+    part(ng, pr, i * .07 - .01, .1, 0, 1, 205, 335, -.012, mats.anod, { rings: 2 });
+  }
+}
+const headProf = t => ({ w: .128 * (1 - .56 * Math.pow(t, 1.5)) + .008 * Math.sin(Math.PI * t * 2.2) * (1 - t), h: .11 * (1 - .5 * Math.pow(t, 1.1)), y: .012 - .05 * t + .02 * Math.sin(Math.PI * t) });
+const HD = [-.05, .44];
+occ.push(part(head, headProf, ...HD, 0, 1, 0, 360, -.018, mats.anod, { n: 2.2 }));
+const crest = part(head, headProf, ...HD, 0, .74, 48, 132, .006, mats.ti, { n: 2.2 });
+const crestLine = part(head, headProf, ...HD, .04, .62, 88.6, 91.4, .014, em.strip, { n: 2.2, thick: .004 });
+const cheekL = part(head, headProf, ...HD, .12, .84, -12, 44, .003, mats.armor, { n: 2.2 });
+const cheekR = part(head, headProf, ...HD, .12, .84, 136, 192, .003, mats.armor, { n: 2.2 });
+part(head, headProf, ...HD, .06, .7, -58, -14, 0, mats.stealth, { n: 2.2 });
+part(head, headProf, ...HD, .06, .7, 194, 238, 0, mats.stealth, { n: 2.2 });
+const snout = part(head, headProf, ...HD, .72, 1, -35, 215, .004, mats.armor, { n: 2.2 });
+const headDecal = decalOn(head, headProf, ...HD, .3, 70, .018, decals.num, .06, .03);
+let noseCap; { const e = headProf(1); noseCap = mk(new THREE.SphereGeometry(1, 28, 18), mats.armor, head, [HD[0] + HD[1] - .004, e.y, 0], [0, 0, 0], [.03, e.h + .004, e.w + .004]);
+  mk(new THREE.SphereGeometry(1, 20, 12), mats.anod, head, [HD[0] + .004, headProf(0).y, 0], [0, 0, 0], [.03, headProf(0).h - .01, headProf(0).w - .01]); }
+const jaw = grp(head, [0, -.03, 0]);
+const jawProf = t => ({ w: .088 * (1 - .45 * t), h: .05 * (1 - .35 * t), y: -.035 + .012 * t });
+part(jaw, jawProf, 0, .37, 0, 1, 190, 350, 0, mats.armor, { n: 2.2 });
+part(jaw, jawProf, 0, .37, 0, 1, 0, 360, -.012, mats.anod, { n: 2.2 });
+for (const s of [1, -1]) for (let i = 0; i < 4; i++) mk(rbox(.022, .006, .004, .002), em.strip, jaw, [.1 + i * .04, -.03 + i * .002, s * (.073 - i * .007)], [0, s * .18, 0]);
+// optics
+const optics = [];
+function buildOptic(parent, pos, dir) {
+  const og = grp(parent, pos); og.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(...dir).normalize());
+  mk(toZ(lathe([[.036, -.03], [.038, -.02], [.038, .01], [.033, .016], [.029, .016], [.029, .004], [.02, .002]], 36)), mats.ti, og);
+  const focus = mk(gearGeo(.03, 32, .004, .003, 0), mats.anod, og, [0, 0, .012]);
+  const ball = grp(og);
+  mk(new THREE.CircleGeometry(.028, 32), mats.anod, ball, [0, 0, -.006]);
+  const pupil = mk(new THREE.CircleGeometry(.011, 32), em.eye, ball, [0, 0, -.004]);
+  mk(ringGeo(.017, .001, .0015, 40), em.eye, ball, [0, 0, -.0045], [Math.PI / 2, 0, 0]);
+  const blades = [];
+  for (let i = 0; i < 6; i++) {
+    const piv = grp(ball, [0, 0, -.002 + i * .0002]); piv.rotation.z = i / 6 * Math.PI * 2;
+    const arm = grp(piv, [.022, 0, 0]);
+    mk(bladeGeo([[0, 0], [-.004, .018], [-.02, .012], [-.012, 0]], .0006, .0003), mats.anod, arm);
+    blades.push(arm);
+  }
+  const lens = new THREE.SphereGeometry(.027, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2.4); lens.rotateX(Math.PI / 2);
+  mk(lens, mats.glass, ball, [0, 0, -.012]);
+  optics.push({ og, ball, pupil, blades, focus });
+}
+buildOptic(head, [.24, .042, .086], [.55, .12, .83]);
+buildOptic(head, [.24, .042, -.086], [.55, .12, -.83]);
+const brow = grp(head, [.36, .062, 0]);
+for (let i = -1; i <= 1; i++) mk(new THREE.SphereGeometry(.007, 12, 8), em.cold, brow, [0, 0, i * .016]);
+// ear-sensors
+const ears = [];
+for (const s of [1, -1]) {
+  const piv = grp(head, [.01, .082, s * .058]);
+  const e = grp(piv); e.rotation.x = -s * .22;
+  mk(bladeGeo([[0, 0], [.03, 0], [.052, .09], [.036, .14], [.006, .096]], .007, .003), mats.armor, e);
+  mk(bladeGeo([[.008, .01], [.026, .01], [.04, .08], [.03, .11], [.012, .08]], .004, .002), mats.ti, e, [0, 0, s * .005]);
+  mk(rbox(.004, .07, .004, .0015), em.strip, e, [.045, .07, s * .005], [0, 0, .33]);
+  mk(servoGeo(.018, .02), mats.anod, piv, [0, 0, 0], [0, s > 0 ? 0 : Math.PI, 0]);
+  ears.push({ piv, s, e });
+}
+for (const s of [1, -1]) {
+  pistons.push(new Piston(anchor(chestG, [.74, .02, s * .085]), anchor(n2, [.05, -.045, s * .06]), .015));
+  pistons.push(new Piston(anchor(head, [-.02, -.035, s * .075]), anchor(jaw, [.11, -.02, s * .065]), .008));
+  cables.push(new Cable(anchor(chestG, [.72, .22, s * .05]), anchor(head, [-.03, .03, s * .05]), .009, .06, mats.rubber));
+}
+cables.push(new Cable(anchor(chestG, [.76, -.06, 0]), anchor(head, [.02, -.05, 0]), .011, .1, mats.anod));
+
+// ---- legs ---------------------------------------------------
+const legs = [];
+function buildLeg(parent, root, side, front) {
+  const L = front ? [.44, .42, .17] : [.38, .4, .33];
+  const s = side;
+  const leg = { s, front, L, i: legs.length };
+  leg.root = grp(parent, root); leg.root0 = leg.root.position.clone();
+  leg.upper = grp(leg.root); leg.lower = grp(leg.upper, [0, -L[0], 0]); leg.foot = grp(leg.lower, [0, -L[1], 0]); leg.paw = grp(leg.foot, [0, -L[2], 0]);
+  leg.ankleDir = front ? new THREE.Vector3(-.2, 1, 0).normalize() : new THREE.Vector3(-.38, 1, 0).normalize();
+  const out = (a0, a1) => s > 0 ? [a0, a1] : [180 - a1, 180 - a0];
+  const rs = s > 0 ? 0 : Math.PI;
+  leg.servoG = grp(leg.root, [0, 0, 0], [0, rs, 0]);
+  mk(servoGeo(front ? .085 : .095, .09), mats.anod, leg.servoG, [0, 0, .02]);
+  leg.gear0 = mk(gearGeo(front ? .066 : .076, 20, .014, .008), mats.ti, leg.servoG, [0, 0, .07]);
+  const capProf = t => ({ w: front ? .1 : .12, h: front ? .14 - .05 * t : .16 - .06 * t, y: front ? .01 : -.01 });
+  leg.cap = part(leg.root, capProf, -.12, .2, 0, 1, ...out(-70, 70), 0, mats.armor, { down: true, n: 3 });
+  const upProf = front
+    ? t => ({ w: .078 - .022 * t, h: .11 * (1 - .42 * t) + .026 * Math.sin(Math.PI * t), y: .018 * (1 - t) })
+    : t => ({ w: .098 - .03 * t, h: .15 * (1 - .5 * t) + .03 * Math.sin(Math.PI * t), y: -.02 + .03 * t });
+  part(leg.upper, upProf, .03, L[0] - .05, 0, 1, 0, 360, -.014, mats.anod, { down: true });
+  leg.thigh = part(leg.upper, upProf, .03, L[0] - .05, .02, .96, ...out(-95, 95), 0, mats.armor, { down: true });
+  part(leg.upper, upProf, .03, L[0] - .05, .15, .75, ...out(96, 150), .006, mats.stealth, { down: true });
+  mk(rbox(.034, L[0] * .9, .03, .008), mats.ti, leg.upper, [0, -L[0] * .5, -s * .045]);
+  mk(servoGeo(.058, .07), mats.anod, leg.upper, [0, -L[0], s * .01], [0, rs, 0]);
+  leg.gear1 = mk(gearGeo(.046, 15, .012, .007), mats.brass, leg.upper, [0, -L[0], s * .05]);
+  const loProf = t => ({ w: .05 - .012 * t, h: .064 - .02 * t, y: front ? .006 : -.004 });
+  part(leg.lower, loProf, .04, L[1] - .06, 0, 1, 0, 360, -.012, mats.anod, { down: true });
+  part(leg.lower, loProf, .04, L[1] - .06, .03, .95, ...out(10, 170), .002, mats.armor, { down: true });
+  part(leg.lower, loProf, .04, L[1] - .06, .1, .8, ...out(-40, 8), .006, mats.carbon, { down: true });
+  mk(lathe([[0, 0], [.012, 0], [.012, -L[1] * .8], [0, -L[1] * .8]], 12), mats.chrome, leg.lower, [front ? -.04 : .04, -.05, 0]);
+  mk(servoGeo(.044, .06), mats.anod, leg.lower, [0, -L[1], s * .008], [0, rs, 0]);
+  const ftProf = t => ({ w: .04 - .006 * t, h: .044 - .008 * t, y: 0 });
+  part(leg.foot, ftProf, .03, L[2] - .05, 0, 1, 0, 360, 0, mats.stealth, { down: true });
+  part(leg.foot, ftProf, .03, L[2] - .05, .08, .92, 40, 140, .006, mats.armor, { down: true });
+  part(leg.foot, ftProf, .03, L[2] - .05, .2, .7, ...out(-20, 20), .004, mats.ti, { down: true });
+  mk(toZ(lathe([[.036, -.02], [.042, -.01], [.042, .01], [.036, .02]], 20)), mats.rubber, leg.foot, [0, -L[2] + .012, 0]);
+  // paw (kept level with the ground after IK)
+  const pawProf = t => ({ w: .058 - .008 * t, h: .03 + .006 * Math.sin(Math.PI * t), y: -.018 - .006 * t });
+  part(leg.paw, pawProf, -.04, .15, 0, 1, 0, 360, 0, mats.anod, { n: 3 });
+  part(leg.paw, pawProf, -.04, .15, .05, .9, 20, 160, .006, mats.armor, { n: 3 });
+  mk(rbox(.07, .016, .08, .007), mats.rubber, leg.paw, [0, -.048, 0]);
+  leg.toes = [];
+  for (let i = 0; i < 4; i++) {
+    const z = (i - 1.5) * .031;
+    const tg = grp(leg.paw, [.1, -.028, z], [0, (i - 1.5) * .12, 0]);
+    const toeProf = t => ({ w: .013, h: .016 - .004 * t, y: 0 });
+    part(tg, toeProf, 0, .045, 0, 1, 0, 360, 0, mats.anod, { n: 2.6, rings: 4 });
+    part(tg, toeProf, .005, .036, 0, 1, 30, 150, .004, i % 3 ? mats.armor : mats.ti, { n: 2.6, rings: 3 });
+    mk(rbox(.028, .01, .02, .004), mats.rubber, tg, [.022, -.016, 0]);
+    mk(bladeGeo([[0, 0], [.018, -.004], [.03, -.02], [.012, -.008], [0, -.01]], .004, .0012), mats.chrome, tg, [.04, .004, 0]);
+    leg.toes.push(tg);
+  }
+  // actuators spanning the joints -> real extension/compression driven by IK
+  if (front) {
+    pistons.push(new Piston(anchor(leg.upper, [-.075, -.06, s * .035]), anchor(leg.lower, [-.05, -.12, s * .03]), .017));
+    pistons.push(new Piston(anchor(leg.lower, [.045, -.08, s * .02]), anchor(leg.foot, [.035, -.05, s * .01]), .011));
+    pistons.push(new Piston(anchor(parent, [root[0] - .14, root[1] + .1, root[2] - s * .02]), anchor(leg.upper, [.065, -.12, s * .03]), .02));
+    cables.push(new Cable(anchor(parent, [root[0] - .06, root[1] + .08, root[2] - s * .03]), anchor(leg.lower, [-.02, -.02, s * .045]), .008, .1, mats.rubber));
+  } else {
+    pistons.push(new Piston(anchor(leg.upper, [.09, -.07, s * .035]), anchor(leg.lower, [.05, -.07, s * .03]), .018));
+    pistons.push(new Piston(anchor(leg.lower, [-.055, -.1, s * .02]), anchor(leg.foot, [-.05, .03, s * .01]), .013));
+    pistons.push(new Piston(anchor(parent, [root[0] - .12, root[1] + .13, root[2] - s * .02]), anchor(leg.upper, [-.05, -.13, s * .035]), .022));
+    cables.push(new Cable(anchor(parent, [root[0] + .05, root[1] + .06, root[2] - s * .02]), anchor(leg.lower, [.02, -.03, s * .045]), .009, .12, mats.rubber));
+  }
+  legs.push(leg); return leg;
+}
+buildLeg(chestG, [.6, -.08, .33], 1, true);
+buildLeg(chestG, [.6, -.08, -.33], -1, true);
+buildLeg(hipG, [-.28, -.02, .31], 1, false);
+buildLeg(hipG, [-.28, -.02, -.31], -1, false);
+const PAW_Y = G + .056;
+legs.forEach(l => { l.home = new THREE.Vector3(l.front ? .77 : -.66, PAW_Y, l.s * (l.front ? .32 : .29)); l.off = V(); l.stepFrom = V(); l.stepTo = V(); l.stepT = 1; l.lift = 0; l.load = 0; });
+
+// ---- tail ---------------------------------------------------
+const tail = [];
+{
+  let parent = hipG, pos = [-.61, .1, 0];
+  for (let i = 0; i < 12; i++) {
+    const Ls = .105 * (1 - i * .035), R = .056 * (1 - i * .058);
+    const sg = grp(parent, pos);
+    mk(toNegX(lathe([[0, 0], [R * .8, 0], [R, -Ls * .1], [R, -Ls * .55], [R * .7, -Ls * .75], [R * .55, -Ls], [0, -Ls]], 18)), mats.anod, sg);
+    const tp = t => ({ w: R * 1.28, h: R * 1.22 - R * .1 * t, y: R * .05 });
+    const plate = part(sg, tp, -Ls * .98, Ls * .92, 0, 1, 22, 158, 0, i % 3 === 1 ? mats.ti : mats.armor, { rings: 3, segs: 14 });
+    part(sg, tp, -Ls * .9, Ls * .8, 0, 1, 205, 335, -.004, mats.stealth, { rings: 2, segs: 10 });
+    mk(ringGeo(R * .95, .01, .008, 28), mats.ti, sg, [0, 0, 0], [0, 0, Math.PI / 2]);
+    if (i % 2 === 0) for (const s of [1, -1]) mk(new THREE.SphereGeometry(.0045, 8, 6), em.tail, sg, [-Ls * .5, 0, s * R * 1.3]);
+    tail.push({ g: sg, i, Ls, plate });
+    parent = sg; pos = [-Ls, 0, 0];
+  }
+  const tip = grp(parent, pos);
+  mk(bladeGeo([[0, 0], [-.12, .008], [-.16, 0], [-.12, -.008]], .012, .004), mats.ti, tip);
+  mk(rbox(.08, .003, .003, .001), em.tail, tip, [-.07, 0, .009]);
+  mk(rbox(.08, .003, .003, .001), em.tail, tip, [-.07, 0, -.009]);
+}
+
+// ============================================================ INNER STRUCTURE (revealed by disassembly)
+// outer armour -> mechanical subframe -> central structure
+const spinners = [];
+// structural ring frames just inside the hull (placed where they clear gears / packs)
+[.1, .8, .93].forEach((t, k) => part(chestG, chestProf, ...CX, t, t + .026, 0, 360, -.04, k % 2 ? mats.anod : mats.ti, { thick: .022, rings: 1, segs: 60 }));
+[.3, .55].forEach(t => part(chestG, chestProf, ...CX, t, t + .024, 55, 125, -.04, mats.ti, { thick: .02, rings: 1 }));
+[.14, .46, .8].forEach((t, k) => part(hipG, hipProf, ...HX, t, t + .03, 0, 360, -.036, k % 2 ? mats.anod : mats.ti, { thick: .02, rings: 1, segs: 60 }));
+// keel beams + longitudinal waist rails + accumulators
+mk(rbox(.5, .03, .05, .01), mats.ti, chestG, [.4, -.27, 0]);
+mk(rbox(.46, .035, .05, .01), mats.ti, hipG, [-.32, -.13, 0]);
+for (const s of [1, -1]) {
+  mk(rbox(.5, .022, .022, .007), mats.ti, body, [-.12, -.12, s * .075]);
+  mk(toNegX(lathe([[0, 0], [.022, -.01], [.024, -.03], [.024, -.17], [.022, -.19], [0, -.2]], 20)), mats.brass, body, [-.02, -.06, s * .115]);
+  // side cable bundles running through the frames
+  for (let k = 0; k < 3; k++) {
+    const z = s * (.212 + k * .006), y = .02 - k * .014;
+    const c = new THREE.CatmullRomCurve3([V().set(.06, y + .01, s * .17), V().set(.25, y, z), V().set(.55, y - .004, z), V().set(.82, y + .03, s * .15)]);
+    mk(new THREE.TubeGeometry(c, 40, .0065, 6), [mats.rubber, mats.anod, mats.brass][k], chestG);
+  }
+}
+// sidepack: power bus + cooling fins + auxiliary servo (sits behind the chest ribs)
+function buildSidepack(parent, pos, s) {
+  const g = grp(parent, pos, [0, s > 0 ? 0 : Math.PI, 0]);
+  mk(rbox(.28, .12, .014, .004), mats.anod, g);
+  for (const y of [-.035, .035]) mk(rbox(.26, .012, .01, .003), mats.brass, g, [0, y, .011]);
+  for (let i = 0; i < 7; i++) mk(rbox(.005, .085, .028, .0015), mats.ti, g, [-.12 + i * .014, 0, .02]);
+  mk(servoGeo(.028, .026), mats.anod, g, [.09, 0, .014]);
+  mk(new THREE.SphereGeometry(.005, 8, 6), em.cold, g, [.05, .045, .012]);
+  return g;
+}
+const sidepacks = [1, -1].map(s => buildSidepack(chestG, [.4, -.14, s * .205], s));
+// hip actuator pack behind the haunch armour
+function buildHippack(parent, pos, s) {
+  const g = grp(parent, pos, [0, s > 0 ? 0 : Math.PI, 0]);
+  mk(servoGeo(.05, .04), mats.anod, g, [.02, 0, 0]);
+  const gr = mk(gearGeo(.04, 18, .01, .006), mats.brass, g, [.02, 0, .03]);
+  gears.push({ m: gr, r: .45 });
+  mk(rbox(.08, .06, .034, .006), mats.ti, g, [-.07, -.01, 0]);
+  mk(toNegX(lathe([[0, 0], [.012, 0], [.012, -.07], [0, -.07]], 12)), mats.chrome, g, [-.03, .045, .005]);
+  return g;
+}
+const hippacks = [1, -1].map(s => buildHippack(hipG, [-.42, .07, s * .165], s));
+// core shrouds (carbon covers behind the service hatches) + drive gearsets
+const shrouds = [1, -1].map(s => s > 0 ? part(chestG, chestProf, ...CX, .36, .62, 10, 50, -.028, mats.carbon, { thick: .005 }) : part(chestG, chestProf, ...CX, .36, .62, 130, 170, -.028, mats.carbon, { thick: .005 }));
+// access plates + bolts on the hatches (breaks the large smooth surface)
+hatches.forEach(h => {
+  const a0 = h.s > 0 ? 30 : 136, a1 = h.s > 0 ? 44 : 150;
+  part(h.inner, chestProf, ...CX, .22, .4, a0, a1, .02, mats.stealth, { thick: .006 });
+  for (const t of [.235, .385]) for (const a of [a0 + 2, a1 - 2]) { const sp = surf(chestProf, ...CX, t, a, .026); const b = mk(new THREE.CylinderGeometry(.004, .004, .004, 6), mats.ti, h.inner); b.position.copy(sp.p); b.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), sp.n); }
+  for (let i = 0; i < 5; i++) { const sp = surf(chestProf, ...CX, .66 + i * .035, h.s > 0 ? 36 : 144, .02); const b = mk(rbox(.012, .05, .004, .0015), mats.anod, h.inner); b.position.copy(sp.p); orientTo(b, sp.n); }
+});
+// haunch service plates (recessed-looking sub panel under the vent)
+const servicePlates = [1, -1].map(s => s > 0 ? part(hipG, hipProf, ...HX, .28, .62, -32, -10, .02, mats.stealth, { thick: .006 }) : part(hipG, hipProf, ...HX, .28, .62, 190, 212, .02, mats.stealth, { thick: .006 }));
+// dorsal hardpoint modules (interchangeable)
+function buildLidar(parent, sp) {
+  const g = grp(parent); g.position.copy(sp.p); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), sp.n);
+  mk(lathe([[0, 0], [.05, 0], [.052, .012], [.046, .02], [0, .02]], 32), mats.anod, g);
+  mk(ringGeo(.044, .008, .006, 40), mats.ti, g, [0, .024, 0]);
+  const spin = grp(g, [0, .03, 0]);
+  mk(new THREE.CylinderGeometry(.03, .034, .022, 24), mats.anod, spin);
+  mk(ringGeo(.0315, .004, .003, 32), em.cold, spin, [0, .004, 0]);
+  mk(rbox(.012, .01, .006, .002), em.cold, spin, [.031, .004, 0]);
+  mk(new THREE.SphereGeometry(.037, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), mats.glass, g, [0, .041, 0]);
+  spinners.push({ m: spin, r: 2.6 });
+  return g;
+}
+function buildMast(parent, sp) {
+  const g = grp(parent); g.position.copy(sp.p); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), sp.n);
+  mk(rbox(.05, .018, .05, .006), mats.anod, g, [0, .009, 0]);
+  mk(lathe([[0, 0], [.007, 0], [.005, .13], [0, .13]], 10), mats.ti, g, [0, .018, 0]);
+  const dish = grp(g, [0, .14, 0], [.5, 0, 0]);
+  mk(lathe([[0, 0], [.028, .012], [.03, .016], [.026, .014], [0, .004]], 24), mats.ti, dish);
+  mk(new THREE.SphereGeometry(.005, 8, 6), em.strip, g, [0, .152, 0]);
+  spinners.push({ m: dish, r: .5, axis: 'y' });
+  return g;
+}
+function buildHeatsink(parent, sp) {
+  const g = grp(parent); g.position.copy(sp.p); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), sp.n);
+  mk(rbox(.09, .014, .07, .004), mats.anod, g, [0, .007, 0]);
+  for (let i = 0; i < 8; i++) mk(rbox(.004, .045, .06, .0012), mats.ti, g, [-.035 + i * .01, .036, 0]);
+  mk(new THREE.PlaneGeometry(.08, .05), em.vent, g, [0, .015, 0], [-Math.PI / 2, 0, 0]);
+  return g;
+}
+const dorsalMods = [
+  buildLidar(chestG, surf(chestProf, ...CX, .8, 90, .026)),
+  buildMast(chestG, surf(chestProf, ...CX, .2, 90, .016)),
+  buildHeatsink(hipG, surf(hipProf, ...HX, .72, 90, .023)),
+];
+// neck base: protective collar + yaw servo ring + extra actuators
+const collarG = grp(chestG, [.8, .1, 0], [0, 0, .8]);
+const collarShell = grp(collarG);
+mk(toNegX(lathe([[.15, -.035], [.172, -.03], [.18, 0], [.176, .045], [.158, .06], [.15, .06]], 48)).rotateY(Math.PI), mats.armor, collarShell);
+for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; mk(new THREE.CylinderGeometry(.006, .006, .01, 6), mats.ti, collarShell, [-.04, Math.cos(a) * .172, Math.sin(a) * .172], [0, 0, Math.PI / 2]); }
+const neckRing = mk(gearGeo(.142, 44, .02, .008, 0), mats.brass, collarG, [.02, 0, 0], [0, Math.PI / 2, 0]);
+for (const s of [1, -1]) pistons.push(new Piston(anchor(chestG, [.64, .2, s * .13]), anchor(n1, [.12, .06, s * .075]), .014));
+
+// ============================================================ STAGE
+// custom lab environment: softbox strips give automotive-studio highlights on metal
+const pmrem = new THREE.PMREMGenerator(renderer);
+{
+  const es = new THREE.Scene();
+  es.add(new THREE.Mesh(new THREE.BoxGeometry(24, 12, 24), new THREE.MeshBasicMaterial({ color: 0x030304, side: THREE.BackSide })));
+  const panel = (w, h, p, r, c, k) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k), side: THREE.DoubleSide })); m.position.set(...p); m.rotation.set(...r); es.add(m); };
+  panel(7, 1.6, [0, 5.8, 0], [Math.PI / 2, 0, 0], 0xffffff, 3.2);
+  panel(.5, 8, [7, 1, 3], [0, -Math.PI / 2, 0], 0xfff2e4, 4.5);
+  panel(.5, 8, [-7, 1, -2], [0, Math.PI / 2, 0], 0xcfe0ff, 3.2);
+  panel(10, .35, [0, .6, -11.8], [0, 0, 0], 0xff9a55, 2.4);
+  panel(4, 2.5, [3, 3, 11.8], [0, Math.PI, 0], 0xffffff, 1.1);
+  panel(12, .2, [0, -1.5, 8], [0, Math.PI, 0], 0x9fc4ff, 1.4);
+  scene.environment = pmrem.fromScene(es, .035).texture;
+  scene.environmentIntensity = .42;
+}
+
+// platform
+const stage = grp(scene);
+mk(lathe([[0, 0], [2.26, 0], [2.26, G - .05], [2.21, G - .02], [2.13, G + .003], [2.02, G + .003], [2.0, G - .006], [0, G - .006]], 128), mats.anod, stage);
+mk(ringGeo(2.075, .004, .03, 160), em.strip, stage, [0, G + .004, 0]);
+mk(ringGeo(2.262, .012, .006, 160), em.strip, stage, [0, .012, 0]);
+const reflector = new Reflector(new THREE.CircleGeometry(2.0, 96), { textureWidth: 768, textureHeight: 768, color: 0x72757a, clipBias: .003 });
+reflector.rotation.x = -Math.PI / 2; reflector.position.y = G - .001; stage.add(reflector);
+const topMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false,
+  uniforms: { uTime: FX.uTime, uRing: { value: 0 }, uScanX: FX.uScanX, uScanAmt: FX.uScanAmt },
+  vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+  fragmentShader: `varying vec3 vW; uniform float uTime, uRing, uScanX, uScanAmt;
+    float ln(float v, float w){ float d = abs(fract(v - .5) - .5) / fwidth(v); return 1.0 - min(d / w, 1.0); }
+    void main(){
+      vec2 p = vW.xz; float r = length(p);
+      float a = .74 + .18 * smoothstep(.5, 1.95, r);
+      vec3 col = vec3(.0045, .005, .0065);
+      float g = max(ln(p.x * 5.0, 1.0), ln(p.y * 5.0, 1.0));
+      col += vec3(.05, .055, .06) * g * .35 * smoothstep(1.9, 1.2, r);
+      col += vec3(.07) * ln(r * 2.0, 1.0) * .35;
+      float ang = atan(p.y, p.x);
+      float tick = step(.8, fract(ang / 6.2831853 * 180.0)) * step(1.78, r) * step(r, 1.86);
+      float big = step(.9, fract(ang / 6.2831853 * 12.0)) * step(1.7, r) * step(r, 1.9);
+      col += vec3(.55, .54, .5) * tick * .12 * uRing;
+      float arc = exp(-pow((r - 1.62) * 160.0, 2.0)) * step(.5, fract(ang / 6.2831853 * 3.0 + uTime * .02));
+      col += vec3(1., .5, .2) * arc * 1.2 * uRing;
+      float sd = abs(vW.x - uScanX);
+      col += vec3(.55, .82, 1.) * exp(-sd * sd * 2400.0) * uScanAmt * .45;
+      gl_FragColor = vec4(col, a);
+    }`,
+});
+const plateTop = new THREE.Mesh(new THREE.CircleGeometry(2.0, 96), topMat);
+plateTop.rotation.x = -Math.PI / 2; plateTop.position.y = G + .0005; plateTop.renderOrder = 1; stage.add(plateTop);
+const shadowCatch = new THREE.Mesh(new THREE.CircleGeometry(2.0, 96), new THREE.ShadowMaterial({ opacity: .55, depthWrite: false }));
+shadowCatch.rotation.x = -Math.PI / 2; shadowCatch.position.y = G + .001; shadowCatch.receiveShadow = true; shadowCatch.renderOrder = 2; stage.add(shadowCatch);
+// soft contact blobs
+const blobTex = canvasTex(128, 128, (g, w) => { const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, w); });
+const blobMat = new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, opacity: .8 });
+const bodyBlob = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.0), blobMat); bodyBlob.rotation.x = -Math.PI / 2; bodyBlob.position.set(0, G + .002, 0); bodyBlob.renderOrder = 3; stage.add(bodyBlob);
+const pawBlobs = legs.map(() => { const m = new THREE.Mesh(new THREE.PlaneGeometry(.26, .2), blobMat.clone()); m.rotation.x = -Math.PI / 2; m.renderOrder = 3; stage.add(m); return m; });
+{ // hide overlays while the mirror renders
+  const overlays = [plateTop, shadowCatch, bodyBlob, ...pawBlobs];
+  const orig = reflector.onBeforeRender.bind(reflector);
+  reflector.onBeforeRender = (...a) => { overlays.forEach(o => o.visible = false); orig(...a); overlays.forEach(o => o.visible = true); };
+}
+// outer rotating calibration ring (polar markings drawn on canvas)
+const ringTex = (() => {
+  const S = 2048, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
+  g.translate(S / 2, S / 2);
+  const R = S / 2;
+  g.strokeStyle = 'rgba(233,230,223,.5)'; g.lineWidth = 2; g.beginPath(); g.arc(0, 0, R * .86, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 1; g.beginPath(); g.arc(0, 0, R * .97, 0, Math.PI * 2); g.stroke();
+  for (let i = 0; i < 360; i++) { const a = i * D, l = i % 10 === 0 ? 34 : i % 5 === 0 ? 20 : 10; g.strokeStyle = `rgba(233,230,223,${i % 10 === 0 ? .7 : .35})`; g.beginPath(); g.moveTo(Math.cos(a) * R * .86, Math.sin(a) * R * .86); g.lineTo(Math.cos(a) * (R * .86 + l), Math.sin(a) * (R * .86 + l)); g.stroke(); }
+  const txt = 'VX-11 NOCTURNE  ·  CALIBRATION FIELD 04  ·  CLASSIFIED PROTOTYPE  ·  DO NOT CROSS LINE  ·  ';
+  g.font = `500 26px ${MONO}`; g.fillStyle = 'rgba(233,230,223,.55)';
+  const chars = (txt + txt).split(''); const step = (Math.PI * 2) / chars.length;
+  chars.forEach((ch, i) => { g.save(); g.rotate(i * step); g.translate(0, -R * .92); g.fillText(ch, -8, 0); g.restore(); });
+  g.fillStyle = 'rgba(255,138,61,.9)';
+  for (let k = 0; k < 4; k++) { g.save(); g.rotate(k * Math.PI / 2 + .2); g.fillRect(-4, -R * .9, 8, 40); g.restore(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+})();
+const calib = new THREE.Mesh(new THREE.PlaneGeometry(6.2, 6.2), new THREE.MeshBasicMaterial({ map: ringTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }));
+calib.rotation.x = -Math.PI / 2; calib.position.y = .004; stage.add(calib);
+// floor: grid fading into fog
+const floorMat = new THREE.ShaderMaterial({
+  fog: true,
+  uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uRing: { value: 0 } }]),
+  vertexShader: `#include <fog_pars_vertex>
+    varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.); vW = w.xyz; vec4 mvPosition = viewMatrix * w; gl_Position = projectionMatrix * mvPosition;
+    #include <fog_vertex>
+    }`,
+  fragmentShader: `#include <fog_pars_fragment>
+    varying vec3 vW; uniform float uRing;
+    float ln(float v){ float d = abs(fract(v - .5) - .5) / fwidth(v); return 1.0 - min(d, 1.0); }
+    void main(){
+      vec2 p = vW.xz; float r = length(p);
+      vec3 col = vec3(.0075, .008, .0095) * (1.0 + .6 * exp(-r * .5));
+      float g = max(ln(p.x), ln(p.y)) * smoothstep(12.0, 3.0, r) * smoothstep(2.3, 3.2, r);
+      col += vec3(.02, .022, .026) * g * uRing;
+      col += vec3(1., .5, .2) * exp(-pow(r - 2.26, 2.0) * 30.0) * .025 * uRing;
+      gl_FragColor = vec4(col, 1.);
+      #include <fog_fragment>
+    }`,
+});
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), floorMat); floor.rotation.x = -Math.PI / 2; floor.position.y = -.001; scene.add(floor);
+// distant lab: vertical light panels + ceiling rig
+const panels = new THREE.InstancedMesh(new THREE.BoxGeometry(.16, 9, .06), new THREE.MeshBasicMaterial({ color: new THREE.Color(.5, .56, .64), fog: true }), 34);
+{ const m = new THREE.Matrix4(); for (let i = 0; i < 34; i++) { const a = i / 34 * Math.PI * 2 + .06; const r = 19.5 + (i % 3) * .9; m.makeRotationY(-a); m.setPosition(Math.cos(a) * r, 4.4, Math.sin(a) * r); panels.setMatrixAt(i, m); } }
+scene.add(panels);
+const rig = grp(scene, [0, 4.6, 0]);
+mk(lathe([[1.5, .12], [1.9, .12], [1.95, 0], [1.9, -.1], [1.5, -.1], [1.48, 0]], 96), mats.anod, rig);
+mk(ringGeo(1.7, .004, .12, 128), em.cold, rig, [0, -.105, 0]);
+// volumetric key-light cone
+const coneMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  uniforms: { uAmt: { value: 0 } },
+  vertexShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV; uniform float uAmt;
+    void main(){ float e = pow(abs(dot(vN, vV)), 2.2); float h = smoothstep(0.0, .25, vUv.y) * (1.0 - .55 * vUv.y);
+      gl_FragColor = vec4(vec3(.62, .7, .82) * e * h * uAmt * .085, 1.0); }`,
+});
+const cone = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 2.25, 4.5, 64, 1, true), coneMat); cone.position.y = 4.5 / 2 + .05; scene.add(cone);
+// dust particles
+const dust = (() => {
+  const N = 1300, pos = new Float32Array(N * 3), ph = new Float32Array(N);
+  for (let i = 0; i < N; i++) { const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 4.2; pos[i * 3] = Math.cos(a) * r; pos[i * 3 + 1] = rnd() * 4.4; pos[i * 3 + 2] = Math.sin(a) * r; ph[i] = rnd() * 100; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('ph', new THREE.BufferAttribute(ph, 1));
+  const m = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { uTime: FX.uTime, uPR: { value: PR }, uAmt: { value: 0 } },
+    vertexShader: `attribute float ph; uniform float uTime, uPR; varying float vA;
+      void main(){ vec3 p = position; p.y = mod(p.y + uTime * (.03 + fract(ph) * .05), 4.4);
+        p.x += sin(uTime * .21 + ph) * .12; p.z += cos(uTime * .17 + ph * 1.3) * .12;
+        vec4 mv = modelViewMatrix * vec4(p, 1.); gl_Position = projectionMatrix * mv;
+        float inCone = smoothstep(2.4, .8, length(p.xz));
+        vA = (.12 + .88 * inCone) * smoothstep(0., .5, p.y) * smoothstep(4.4, 3.4, p.y) * (.4 + .6 * fract(ph * 7.1));
+        gl_PointSize = min((1.2 + fract(ph * 3.7) * 2.4) * uPR * (3.0 / -mv.z) * 2.0, 4.0 * uPR); }`,
+    fragmentShader: `varying float vA; uniform float uAmt; void main(){ float d = length(gl_PointCoord - .5); float a = smoothstep(.5, .0, d); gl_FragColor = vec4(vec3(.85, .88, .95) * a * vA * uAmt * .55, 1.); }`,
+  });
+  const p = new THREE.Points(g, m); p.frustumCulled = false; scene.add(p); return p;
+})();
+// scanner light-sheet
+const scanMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  uniforms: { uAmt: FX.uScanAmt, uTime: FX.uTime },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }`,
+  fragmentShader: `varying vec2 vUv; uniform float uAmt, uTime;
+    void main(){ float edge = smoothstep(0., .08, vUv.x) * smoothstep(1., .92, vUv.x);
+      float v = smoothstep(0., .04, vUv.y) * smoothstep(1., .5, vUv.y);
+      float rows = .6 + .4 * step(.5, fract(vUv.y * 120.0 - uTime * 2.0));
+      gl_FragColor = vec4(vec3(.45, .72, 1.) * edge * v * rows * uAmt * .035, 1.); }`,
+});
+const scanSheet = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.1), scanMat);
+scanSheet.rotation.y = Math.PI / 2; scanSheet.position.y = G + 1.05; scene.add(scanSheet);
+
+// ============================================================ LIGHTS
+const hemi = new THREE.HemisphereLight(0x8494a8, 0x0a0a0c, 0); scene.add(hemi);
+const key = new THREE.SpotLight(0xfff0e0, 0, 0, .44, .75, 2);
+key.position.set(4.4, 3.9, 3.6); key.target.position.set(.1, .7, 0); scene.add(key, key.target);
+key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -.0006; key.shadow.normalBias = .035; key.shadow.camera.near = 3; key.shadow.camera.far = 12; key.shadow.radius = 4;
+const rimA = new THREE.SpotLight(0x9ec3ff, 0, 0, .5, 1, 2); rimA.position.set(-3.6, 3.1, -3.6); rimA.target.position.set(0, .9, 0); scene.add(rimA, rimA.target);
+const rimB = new THREE.SpotLight(0xffb27a, 0, 0, .45, 1, 2); rimB.position.set(3.8, 2.3, -3.9); rimB.target.position.set(.6, 1.1, 0); scene.add(rimB, rimB.target);
+const kick = new THREE.SpotLight(0xbcd4ff, 0, 0, .5, 1, 2); kick.position.set(-4.2, 1.3, 2.6); kick.target.position.set(.2, .8, 0); scene.add(kick, kick.target);
+const topL = new THREE.SpotLight(0xdfe8ff, 0, 0, .5, .9, 2); topL.position.set(0, 4.5, 0); topL.target.position.set(0, 0, 0); scene.add(topL, topL.target);
+const under = new THREE.PointLight(0xff7a2a, 0, 3.2, 2); under.position.set(0, .2, 0); scene.add(under);
+const eyeLight = new THREE.PointLight(0xffa860, 0, .6, 2); head.add(eyeLight); eyeLight.position.set(.3, .04, 0);
+
+// ============================================================ POST
+const rt = new THREE.WebGLRenderTarget(innerWidth * PR, innerHeight * PR, { type: THREE.HalfFloatType, samples: 4 });
+const composer = new EffectComposer(renderer, rt);
+composer.setPixelRatio(PR); composer.setSize(innerWidth, innerHeight);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), .36, .42, 1.55);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+const grade = new ShaderPass({
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(innerWidth, innerHeight) } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }`,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime; uniform vec2 uRes; varying vec2 vUv;
+    void main(){ vec2 c = vUv - .5; float r = dot(c, c);
+      vec2 o = c * r * .004;
+      vec3 col = vec3(texture2D(tDiffuse, vUv + o).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - o).b);
+      col *= mix(1.0, .5, smoothstep(.08, .55, r * 1.5));
+      float n = fract(sin(dot(vUv * uRes + fract(uTime) * 91.0, vec2(12.9898, 78.233))) * 43758.5453);
+      col += (n - .5) * .014;
+      gl_FragColor = vec4(col, 1.); }`,
+});
+composer.addPass(grade);
+
+// ============================================================ SECTIONS / HUD
+const SECTIONS = [
+  { k: 'Reveal', d: 'Autonomous quadruped predator platform. 41 actuated joints, full hydraulic drive, no humanoid legacy.' },
+  { k: 'Optical array', d: 'Stereo optics with six-blade irises and a brow tri-sensor. Focus range 0.2–400 m, saccade 900°/s.' },
+  { k: 'Forelimb', d: 'Digitigrade forelimb. Three hydraulic actuators per leg, 280 bar, reduction gearing at every joint.' },
+  { k: 'Kinetic core', d: 'Counter-rotating gimbal flywheel. Stores gait energy and stabilises the chassis in yaw and roll.' },
+  { k: 'Balance tail', d: '12-segment counter-mass tail and active cooling. Vents cycle on thermal load.' },
+  { k: 'Prototype', d: 'VX-11 Nocturne. Closed demonstration, lab 04. Not for distribution.' },
+];
+const rail = document.getElementById('rail');
+SECTIONS.forEach((s, i) => { const b = document.createElement('button'); b.innerHTML = `<span>${String(i + 1).padStart(2, '0')} ${s.k}</span><i></i>`; b.setAttribute('aria-label', s.k); b.onclick = () => goSection(i); rail.appendChild(b); });
+const railBtns = [...rail.children];
+function goSection(i) { const max = document.documentElement.scrollHeight - innerHeight; scrollTo({ top: max * i / 5, behavior: 'smooth' }); }
+const $ = id => document.getElementById(id);
+let shownSec = -1;
+function setSection(i) {
+  if (i === shownSec) return; shownSec = i;
+  const w = $('secwrap'); w.classList.add('out');
+  $('secn').textContent = String(i + 1).padStart(2, '0');
+  railBtns.forEach((b, k) => b.classList.toggle('on', k === i));
+  setTimeout(() => { $('sect').textContent = SECTIONS[i].k; $('secd').textContent = SECTIONS[i].d; w.classList.remove('out'); }, 260);
+}
+
+// hotspots: section callouts (featured automatically by scroll position)
+const HOT = [
+  { name: 'Optical array', desc: 'Iris f/1.4–f/11 · tracking', parent: head, p: [.26, .04, .09], sec: 1 },
+  { name: 'Forelimb actuator', desc: 'Triceps ram · 280 bar', parent: legs[0].lower, p: [-.03, -.08, .04], sec: 2 },
+  { name: 'Kinetic core', desc: 'Dual gimbal flywheel', parent: coreG, p: [0, 0, .2], sec: 3 },
+  { name: 'Thermal vent', desc: 'Fan + louvre array', parent: vents[0].v, p: [0, 0, .02], sec: 4 },
+  { name: 'Balance tail', desc: '12 segments · counter-mass', parent: tail[5].g, p: [0, 0, 0], sec: 4 },
+];
+HOT.forEach(h => { h.m = anchor(h.parent, h.p); });
+const SECTION_CALLOUT = [null, 0, 1, 2, 4, null];
+
+// ============================================================ KINEMATIC ZONES — invisible hitboxes riding on the bones
+const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+const ZONES = [], hitMeshes = [];
+const _hv = V(), _hv2 = V();
+function zone(z, boxes) {
+  z.enabled = z.enabled || (() => true);
+  boxes.forEach(([parent, size, p, extra]) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(...size), hitMat);
+    m.position.set(...p); parent.add(m); m.userData = { zone: z, ...(extra || {}) }; hitMeshes.push(m);
+  });
+  ZONES.push(z); return z;
+}
+const headAnchor = anchor(head, [.18, .02, 0]);
+const bodyAnchor = anchor(body, [.05, .05, 0]);
+const headMan = { mode: 'idle', yaw: 0, pitch: 0, vy: 0, vp: 0, local: new THREE.Vector3(.42, -.02, 0), g0: new THREE.Vector2(), c0: V() };
+const tailMan = { mode: 'idle', a: 0, b: 0, k: 8, local: V(), off: new Float32Array(24), vel: new Float32Array(24), prev: new Float32Array(24) };
+const bodyMan = { mode: 'idle', v: [0, 0, 0, 0, 0], vel: [0, 0, 0, 0, 0], s0: [0, 0, 0, 0, 0], fx: 0, w0: V() }; // h, pitch, roll, yaw, x
+const jawMan = { mode: 'idle', open: 0, v: 0, o0: 0 };
+zone({ kind: 'head', name: 'Head servo // manual control', r: .3, center: () => headAnchor.getWorldPosition(_hv) }, [[head, [.52, .14, .26], [.17, .02, 0]]]);
+zone({ kind: 'jaw', name: 'Muzzle actuator // manual', r: .16, center: () => jaw.localToWorld(_hv.set(.2, -.05, 0)) }, [[jaw, [.36, .07, .17], [.19, -.05, 0]]]);
+zone({ kind: 'body', name: 'Chassis // kinematic pose', r: .7, center: () => bodyAnchor.getWorldPosition(_hv) },
+  [[chestG, [.86, .56, .5], [.44, -.04, 0], { role: 'fore' }], [hipG, [.6, .44, .44], [-.32, .03, 0], { role: 'aft' }], [body, [.44, .36, .36], [-.12, .05, 0], { role: 'spine' }]]);
+legs.forEach(L => {
+  L.man = { mode: 'idle', delta: V(), vel: V(), offset: V(), cur: V().copy(L.home), lift: 0 };
+  zone({ kind: 'leg', leg: L, name: (L.front ? 'Foreleg ' : 'Hind leg ') + (L.s > 0 ? 'L' : 'R') + ' // kinematic control', r: .36, center: () => L.lower.getWorldPosition(_hv) },
+    [[L.upper, [.17, L.L[0], .17], [0, -L.L[0] / 2, 0], { role: 'upper' }], [L.lower, [.13, L.L[1], .13], [0, -L.L[1] / 2, 0], { role: 'lower' }],
+     [L.foot, [.11, L.L[2], .11], [0, -L.L[2] / 2, 0], { role: 'foot' }], [L.paw, [.22, .1, .15], [.04, -.02, 0], { role: 'paw' }]]);
+});
+zone({ kind: 'tail', name: 'Tail array // manual control', r: .26, center: () => tail[tailMan.k].g.getWorldPosition(_hv) },
+  tail.slice(3).map(s => [s.g, [s.Ls * 1.05, .15, .15], [-s.Ls / 2, 0, 0], { seg: s.i }]));
+const earZones = ears.map((e, k) => zone({ kind: 'ear', ear: k, name: 'Sensor fin ' + (e.s > 0 ? 'L' : 'R') + ' // manual control', r: .1, center: () => e.piv.getWorldPosition(_hv) }, [[e.piv, [.08, .17, .06], [.03, .07, 0]]]));
+
+// ============================================================ ASSEMBLY — parts, sockets, dependencies
+// Every removable part is re-pivoted around its own centre and knows its home socket.
+// Sockets carry a compatibility type, an explode vector and an occupant.
+const PARTS = [], SOCKETS = [], pickMeshes = [], hatchMeshes = [];
+const Y_UP = new THREE.Vector3(0, 1, 0);
+creature.updateMatrixWorld(true);
+function partify(name, parent, objs, o = {}) {
+  let pg;
+  if (o.group) { pg = o.group; parent = pg.parent; }
+  else {
+    const box = new THREE.Box3(), tb = new THREE.Box3();
+    objs.forEach(m => { m.updateMatrix(); m.geometry.computeBoundingBox(); tb.copy(m.geometry.boundingBox).applyMatrix4(m.matrix); box.union(tb); });
+    const c = box.getCenter(V()); pg = new THREE.Group(); pg.position.copy(c); parent.add(pg);
+    objs.forEach(m => { m.position.sub(c); pg.add(m); });
+  }
+  pg.updateMatrixWorld(true);
+  const inv = pg.matrixWorld.clone().invert(), lb = new THREE.Box3(), tb = new THREE.Box3(), meshes = [], mm = new THREE.Matrix4();
+  pg.traverse(m => { if (m.isMesh && m.material !== hitMat) { if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); tb.copy(m.geometry.boundingBox).applyMatrix4(mm.multiplyMatrices(inv, m.matrixWorld)); lb.union(tb); meshes.push(m); } });
+  const size = Math.max(.03, lb.getSize(V()).length() / 2);
+  const sock = { kind: 'socket', parent, pos: pg.position.clone(), quat: pg.quaternion.clone(), type: o.type || ('U:' + name), dir: new THREE.Vector3(...(o.dir || [0, 1, 0])).normalize(), dist: o.dist ?? .3, layer: o.layer || 0, r: size, occupant: null, ring: null, flash: 0, name };
+  SOCKETS.push(sock);
+  const part = { kind: 'part', name, pg, home: sock, socket: sock, target: null, type: sock.type, cls: o.cls || 'removable', layer: o.layer || 0, lb, size, meshes, covers: o.covers || [], coverMode: o.coverMode || 'any', state: 'mounted', pull: 0, shake: 0 };
+  sock.occupant = part;
+  meshes.forEach(m => { m.userData.part = part; pickMeshes.push(m); });
+  part.mass = clamp((size - .04) / .3, 0, 1);
+  PARTS.push(part); return part;
+}
+const LR = s => s > 0 ? 'L' : 'R';
+// order matters only for covers: a cover must exist before the part it covers
+const pDorsal = dorsalMods.map((g, k) => partify(['Lidar dome', 'Sensor mast', 'Heat-sink block'][k], null, [], { group: g, type: 'DORSAL', dir: [0, 1, 0], dist: .42 }));
+const pChestTop = chestTop.map((m, k) => partify('Dorsal plate C' + (k + 1), chestG, [m], { dir: [0, 1, 0], dist: .32, covers: k === 2 ? [pDorsal[0].home] : k === 0 ? [pDorsal[1].home] : [] }));
+const pHipTop = hipTops.map((m, k) => partify('Dorsal plate H' + (k + 1), hipG, [m], { dir: [0, 1, 0], dist: .3, covers: k === 1 ? [pDorsal[2].home] : [] }));
+const pWaist = waistTop.map((m, k) => partify('Spine cover ' + (k + 1), body, [m], { dir: [0, 1, 0], dist: .26 }));
+const pRibs = ribs.map(r => partify('Rib plate ' + LR(r.s) + (r.k + 1), r.g, [r.g.children[0]], { dir: [0, -.15, r.s], dist: .3 }));
+const pBelly = partify('Ventral plate', chestG, [chestBelly, bellyDecal], { dir: [0, -1, 0], dist: .26 });
+const pShroud = [1, -1].map((s, k) => partify('Core shroud ' + LR(s), chestG, [shrouds[k]], { layer: 1, dir: [0, .45, s], dist: .2, covers: [hatches[k]] }));
+const pGears = gearSets.map((g, k) => partify('Drive gearset ' + LR(k ? -1 : 1), null, [], { group: g, type: 'GEARSET', cls: 'structural', layer: 1, dir: [0, .5, k ? -1 : 1], dist: .18, covers: [hatches[k]] }));
+const pCore = partify('Kinetic core', null, [], { group: coreG, type: 'CORE', cls: 'structural', layer: 2, dir: [0, .6, 1], dist: .44, covers: pShroud, coverMode: 'all' });
+const pSide = sidepacks.map((g, k) => partify('Power pack ' + LR(k ? -1 : 1), null, [], { group: g, type: 'SIDEPACK', cls: 'structural', layer: 1, dir: [0, 0, k ? -1 : 1], dist: .2, covers: [pRibs[k * 4 + 1], pRibs[k * 4 + 2]] }));
+const pVents = vents.map(v => partify('Thermal vent ' + LR(v.s), null, [], { group: v.v, type: 'VENT', dir: [0, .1, v.s], dist: .4 }));
+const pHaunch = [1, -1].map((s, k) => partify('Haunch armour ' + LR(s), hipG, k === 0 ? [haunches[0], warnDecal, servicePlates[0]] : [haunches[1], numDecal, servicePlates[1]], { dir: [0, 0, s], dist: .3, covers: [pVents[k].home] }));
+const pHip = hippacks.map((g, k) => partify('Hip actuator ' + LR(k ? -1 : 1), null, [], { group: g, type: 'HIPPACK', cls: 'structural', layer: 1, dir: [0, 0, k ? -1 : 1], dist: .18, covers: [pHaunch[k]] }));
+const pCrest = partify('Crest plate', head, [crest, crestLine, headDecal], { dir: [0, 1, 0], dist: .15 });
+const pCheek = [cheekL, cheekR].map((m, k) => partify('Cheek plate ' + LR(k ? -1 : 1), head, [m], { dir: [0, .2, k ? -1 : 1], dist: .13 }));
+const pOptic = optics.map((o, k) => partify('Optic ' + LR(k ? -1 : 1), null, [], { group: o.og, type: 'OPTIC', cls: 'structural', layer: 1, dir: [.3, 0, k ? -1 : 1], dist: .11, covers: [pCheek[k]] }));
+const pMuzzle = partify('Muzzle module', head, [snout, noseCap], { dir: [1, .1, 0], dist: .13 });
+const pBrow = partify('Brow tri-sensor', null, [], { group: brow, type: 'SENSOR', dir: [.4, 1, 0], dist: .12 });
+const pFins = ears.map((e, k) => partify('Sensor fin ' + LR(e.s), null, [], { group: e.e, type: 'FIN', dir: [0, 1, 0], dist: .12 }));
+earZones.forEach((z, k) => { z.enabled = () => !!pFins[k].home.occupant; });
+const pNeck = neckPlates.map((m, k) => partify('Neck gorget ' + (k + 1), m.parent, [m], { dir: [0, 1, 0], dist: .13 }));
+const pCollar = partify('Neck collar', null, [], { group: collarShell, dir: [-1, 0, 0], dist: .18 });
+legs.forEach(L => {
+  const sn = (L.front ? 'F' : 'H') + LR(L.s);
+  L.pCap = partify((L.front ? 'Scapula cap ' : 'Haunch cap ') + sn, L.root, [L.cap], { dir: [0, .2, L.s], dist: .2 });
+  L.pServo = partify((L.front ? 'Shoulder servo ' : 'Hip servo ') + sn, null, [], { group: L.servoG, type: L.front ? 'SERVO_F' : 'SERVO_H', cls: 'structural', layer: 1, dir: [0, 0, L.s], dist: .13, covers: [L.pCap] });
+  L.pThigh = partify('Thigh armour ' + sn, L.upper, [L.thigh], { dir: [0, 0, L.s], dist: .15 });
+});
+const pTail = tail.map(t => partify('Tail plate ' + (t.i + 1), t.g, [t.plate], { dir: [0, 1, 0], dist: .08 }));
+hatches.forEach(h => { h.kind = 'hatch'; h.name = 'Service hatch ' + LR(h.s); h.open = 0; h.openS = 0; h.angle = 0; h.inner.traverse(m => { if (m.isMesh) { m.userData.hatch = h; hatchMeshes.push(m); } }); h.inner.updateMatrixWorld(true);
+  const inv = h.inner.matrixWorld.clone().invert(), tb = new THREE.Box3(), mm = new THREE.Matrix4(); h.lb = new THREE.Box3();
+  h.inner.traverse(m => { if (m.isMesh) { m.geometry.boundingBox || m.geometry.computeBoundingBox(); tb.copy(m.geometry.boundingBox).applyMatrix4(mm.multiplyMatrices(inv, m.matrixWorld)); h.lb.union(tb); } }); });
+const TYPE_LABEL = { DORSAL: 'dorsal module', GEARSET: 'gearset', CORE: 'core', SIDEPACK: 'power pack', VENT: 'vent', HIPPACK: 'hip actuator', OPTIC: 'optic', SENSOR: 'sensor', FIN: 'sensor fin', SERVO_F: 'shoulder servo', SERVO_H: 'hip servo' };
+const typeLabel = t => TYPE_LABEL[t] || t.replace(/^U:/, '').toLowerCase();
+function covering(c) {
+  if (c.kind === 'hatch') return c.angle < .75;
+  if (c.kind === 'socket') return !!c.occupant;
+  return c.state === 'mounted' && c.socket === c.home;
+}
+function blockedBy(p) {
+  if (!p.covers.length) return null;
+  const cov = p.covers.filter(covering);
+  if (p.coverMode === 'all') return cov.length === p.covers.length ? cov[0] : null;
+  return cov[0] || null;
+}
+const coverName = c => c.kind === 'socket' ? (c.occupant ? c.occupant.name : c.name) : c.name;
+const occluders = occ;
+
+// ============================================================ COMPONENT METADATA — what each part is and how it fits the machine
+// thin parts get slightly larger invisible pick proxies (visual geometry untouched)
+function proxy(p, size, pos) { const m = new THREE.Mesh(new THREE.BoxGeometry(...size), hitMat); m.position.set(...pos); p.pg.add(m); m.userData.part = p; m.userData.proxy = true; p.meshes.push(m); pickMeshes.push(m); }
+proxy(pDorsal[1], [.06, .18, .06], [0, .085, 0]);
+pFins.forEach(p => proxy(p, [.075, .17, .05], [.03, .07, 0]));
+proxy(pBrow, [.03, .032, .062], [0, 0, 0]);
+pTail.forEach(p => proxy(p, [p.lb.max.x - p.lb.min.x + .01, .03, p.lb.max.z - p.lb.min.z + .01], [0, (p.lb.max.y + p.lb.min.y) / 2, 0]));
+hatches.forEach(h => { h.anchor = anchor(h.inner, h.lb.getCenter(V()).toArray()); });
+
+const pct = v => clamp(Math.round(v * 100), 0, 99) + ' %';
+const deg = v => (v >= 0 ? '+' : '−') + Math.abs(v / D).toFixed(0) + '°';
+const liveTemp = (off = 0) => () => (temp + off).toFixed(1) + ' °C';
+const liveLoad = (k = 1) => () => pct(servoLoad * k);
+const detachedOr = (p, s) => () => p && p.state !== 'mounted' ? 'DETACHED' : s;
+const META = {
+  'Lidar dome': { id: 'VX-SEN // 21', cat: 'Sensor module · dorsal', desc: 'Rotating time-of-flight scanner on a dorsal hardpoint. Builds the 360° depth map the gait planner reads before every step.', rows: [['Range', '0.3 – 120 m'], ['Scan', '20 Hz · 1.2 M pts/s'], ['Power', '18 W'], ['Mount', 'dorsal hardpoint · any']], conn: ['Dorsal data bus', 'Chassis power rail'] },
+  'Sensor mast': { id: 'VX-SEN // 22', cat: 'Comms module · dorsal', desc: 'Mast with a steerable micro-dish. Keeps the encrypted uplink to the lab and relays remote override commands.', rows: [['Band', 'Ka · 26.5 – 40 GHz'], ['Link range', '8 km line of sight'], ['Dish slew', '±25°'], ['Power', '9 W']], conn: ['Dorsal data bus'] },
+  'Heat-sink block': { id: 'VX-THM // 23', cat: 'Thermal module · dorsal', desc: 'Passive finned radiator for a dorsal hardpoint. Adds surface to dump spine-actuator heat when the vents are saturated.', rows: [['Dissipation', '140 W passive'], ['Fins', '8 × Ti · 0.4 mm'], ['Temp', liveTemp(-4)]], conn: ['Spine heat pipe'] },
+  'Dorsal plate': { id: 'VX-ARM // 1', cat: 'Armour · dorsal', desc: 'Overlapping dorsal armour segment. Each plate slides over the next so the spine can flex without opening a gap.', rows: [['Material', 'graphite ceramic'], ['Thickness', '12 mm'], ['Mass', '1.4 kg']] },
+  'Spine cover': { id: 'VX-ARM // 3', cat: 'Armour · waist', desc: 'Flexible cover over the kinetic spine. Protects the vertebrae and spine rams while the waist bends.', rows: [['Material', 'graphite ceramic'], ['Flex', '±8°']] },
+  'Rib plate': { id: 'VX-ARM // 4', cat: 'Armour · chest', desc: 'Breathing rib plate. The gaps between ribs bleed core heat and flex with the chassis breathing cycle.', rows: [['Material', 'matte stealth composite'], ['Travel', '±4 mm'], ['Covers', 'power pack · core bay']] },
+  'Ventral plate': { id: 'VX-ARM // 20', cat: 'Armour · ventral', desc: 'Carbon shield under the fore chassis — first protection for the keel beam and the side cable runs.', rows: [['Material', 'carbon fibre'], ['Mass', '1.1 kg']] },
+  'Core shroud': { id: 'VX-ARM // 50', cat: 'Protective cover', desc: 'Carbon shroud closing the core bay behind the service hatch. Contains debris if the flywheel ever fails.', rows: [['Material', 'carbon fibre'], ['Containment', 'rated 18 000 rpm']] },
+  'Drive gearset': { id: 'VX-DRV // 51', cat: 'Drive train', desc: 'Reduction gearset taking torque from the kinetic core to the fore auxiliary shaft.', rows: [['Ratio', '16 : 9'], ['Output', () => Math.round(coreRate * 1350) + ' rpm'], ['Lubrication', 'dry film MoS₂']], conn: ['Kinetic core', 'Fore auxiliary shaft'] },
+  'Kinetic core': { big: true, id: 'VX-KC // 01', cat: 'Energy & stabilisation', desc: 'Counter-rotating dual-gimbal flywheel at the heart of the fore chassis. Stores gait energy between steps and damps yaw and roll through gyroscopic torque.', rows: [['Speed', () => pCore.state === 'mounted' ? Math.round(coreRate * 2400).toLocaleString('en-US').replace(',', ' ') + ' rpm' : 'OFFLINE', () => pCore.state === 'mounted' ? coreRate / 6 : 0], ['Stored', '1.9 MJ'], ['Gimbals', '2 · counter-rotating'], ['Temp', liveTemp(6), () => (temp - 25) / 30], ['Status', detachedOr(null, 'NOMINAL')]], conn: ['Drive gearsets L / R', 'Power packs L / R', 'Central keel'] },
+  'Power pack': { big: true, id: 'VX-PWR // 61', cat: 'Power distribution', desc: 'Protected high-current bus bars with an integrated fin stack and auxiliary servo. Feeds the foreleg actuator network from the core.', rows: [['Bus', '400 V DC'], ['Draw', () => Math.round(1.2 + servoLoad * 3.4 * 10) / 10 + ' kW', () => servoLoad], ['Cooling', 'fin stack · passive'], ['Temp', liveTemp(2)]], conn: ['Kinetic core', 'Shoulder servos', 'Foreleg rams'] },
+  'Thermal vent': { id: 'VX-THM // 70', cat: 'Cooling module', desc: 'Active cooling module exhausting heat from the adjacent hip actuators. Louvres open automatically under thermal load.', rows: [['Fan', () => ventOpen > .5 ? 'ACTIVE' : 'IDLE'], ['Louvres', () => pct(ventOpen), () => ventOpen], ['Airflow', '42 l/s'], ['Temp', liveTemp()]], conn: ['Hip actuator'] },
+  'Haunch armour': { id: 'VX-ARM // 71', cat: 'Armour · side', desc: 'Main side armour of the aft chassis. Carries the thermal vent and a service plate; removing it exposes the hip actuator.', rows: [['Material', 'graphite ceramic'], ['Thickness', '14 mm'], ['Carries', 'thermal vent']] },
+  'Hip actuator': { big: true, id: 'VX-ACT // 72', cat: 'Actuator · aft chassis', desc: 'Servo drum and gearbox that pre-load the hind-leg drive. Balances the rear kinematic linkage when the chassis pitches or crouches.', rows: [['Torque', '310 N·m'], ['Load', liveLoad(1.1), () => servoLoad], ['Temp', liveTemp(3), () => (temp - 25) / 30], ['Range', '−35° / +60°']], conn: ['Hip servo', 'Rear kinematic linkage', 'Aft power rail'] },
+  'Crest plate': { id: 'VX-ARM // 80', cat: 'Armour · head', desc: 'Brushed titanium crest over the sensor head. The amber seam is the head status light.', rows: [['Material', 'grade 5 titanium'], ['Mass', '0.6 kg']] },
+  'Cheek plate': { id: 'VX-ARM // 81', cat: 'Armour · head', desc: 'Cheek armour that retains the optic module. Remove it to service the optics.', rows: [['Material', 'graphite ceramic'], ['Retains', 'optic module']] },
+  'Optic': { big: true, title: s => 'Optical array ' + s, id: 'VX-OPT // 82', cat: 'Optical sensor', desc: 'Multi-spectrum observation package: low-light imaging, stereo depth estimation and target tracking behind a six-blade iris.', rows: [['Aperture', () => 'f/' + (1.4 + (1 - aperture) * 9.6).toFixed(1), () => aperture], ['Range', '0.2 – 400 m'], ['Saccade', '900°/s'], ['Spectrum', 'VIS + NIR'], ['Status', () => T < 2.3 ? 'OFFLINE' : trackW > .5 ? 'LOCK · CURSOR' : 'TRACKING']], conn: ['Head signal loom', 'Brow tri-sensor · fusion'] },
+  'Muzzle module': { id: 'VX-HD // 83', cat: 'Head module', desc: 'Muzzle shell over the inner skull frame; houses the proximity sensors used for close-range handling.', rows: [['Proximity', '0 – 1.5 m'], ['Material', 'graphite ceramic']] },
+  'Brow tri-sensor': { id: 'VX-SEN // 84', cat: 'Sensor module', desc: 'Three-element brow sensor fusing thermal, UV and ranging data with the main optics.', rows: [['Channels', 'thermal · UV · ToF'], ['Range', '0.1 – 25 m']], conn: ['Optical arrays L / R'] },
+  'Sensor fin': { id: 'VX-SEN // 85', cat: 'Sensor module · small', desc: 'Directional acoustic / RF sensor fin. Swivels toward sound sources and folds back under load.', rows: [['Swivel', '±34°'], ['Fold', '−43° / +26°']] },
+  'Neck gorget': { id: 'VX-ARM // 90', cat: 'Armour · neck', desc: 'Nested neck ring. The rings let the neck bend while protecting the rams and signal loom.', rows: [['Material', 'graphite ceramic'], ['Overlap', '12 mm']] },
+  'Neck collar': { big: true, title: () => 'Neck collar & servo ring', id: 'VX-ACT // 91', cat: 'Actuator · neck base', desc: 'Collar over the multi-axis neck servo ring, which provides stabilised yaw and pitch for the optical head platform.', rows: [['Ring', () => deg(neckRing.rotation.x / 2.4)], ['Rams', '2 × 180 bar'], ['Load', liveLoad(.8), () => servoLoad * .8]], conn: ['Optical head', 'Neck rams', 'Signal loom'] },
+  'Scapula cap': { id: 'VX-ARM // 1F', cat: 'Armour · joint cover', desc: 'Joint cover over the shoulder servo. Shields the reduction ring from impacts and debris.', rows: [['Material', 'graphite ceramic'], ['Covers', 'shoulder servo']] },
+  'Haunch cap': { id: 'VX-ARM // 1H', cat: 'Armour · joint cover', desc: 'Joint cover over the hip servo. Shields the reduction ring from impacts and debris.', rows: [['Material', 'graphite ceramic'], ['Covers', 'hip servo']] },
+  'Shoulder servo': { big: true, id: 'VX-ACT // 04', cat: 'Actuator · foreleg', desc: 'Electromechanical servo with a 2.6 : 1 external reduction ring. Drives primary foreleg articulation and compensates load as weight shifts.', leg: true, rows: [['Torque', '420 N·m'], ['Load', null], ['Temp', liveTemp(4), () => (temp - 25) / 30], ['Range', '−40° / +75°']], conn: ['Power pack', 'Triceps ram', 'Scapula strut'] },
+  'Hip servo': { big: true, id: 'VX-ACT // 08', cat: 'Actuator · hind leg', desc: 'Electromechanical servo with a 2.6 : 1 reduction ring. Drives the femur and shares load with the glute ram.', leg: true, rows: [['Torque', '520 N·m'], ['Load', null], ['Temp', liveTemp(3), () => (temp - 25) / 30], ['Range', '−35° / +70°']], conn: ['Hip actuator', 'Glute ram', 'Stifle ram'] },
+  'Thigh armour': { id: 'VX-ARM // 12', cat: 'Armour · limb', desc: 'Outer armour of the upper leg; the inner strut and actuators stay exposed for cooling.', rows: [['Material', 'graphite ceramic'], ['Mass', '0.9 kg']] },
+  'Tail plate': { id: 'VX-ARM // TP', cat: 'Armour · tail', desc: 'Tail scale. Twelve overlapping scales protect the vertebra chain of the balance tail.', rows: [['Material', 'graphite ceramic'], ['Mass', '0.12 kg']] },
+};
+const legOf = L => ({ side: (L.front ? 'F' : 'H') + (L.s > 0 ? 'L' : 'R') });
+const ZMETA = {
+  head: () => ({ big: true, title: 'VX-11 optical head assembly', id: 'VX-HD // 01', cat: 'Sensor platform', desc: 'Stabilised sensor head on a two-stage neck: stereo optics, brow tri-sensor, two sensor fins and the muzzle actuator. Its world orientation is held steady while the chassis moves.', rows: [['Yaw', () => deg(look.yaw + pc('hy')), () => .5 + (look.yaw + pc('hy')) / 1.6], ['Pitch', () => deg(look.pitch + pc('hp'))], ['Range', '±46° · −24° / +26°'], ['Optics', '2 × stereo · f/1.4 – 11'], ['Mode', () => headMan.mode === 'grab' ? 'MANUAL' : 'STABILISED']], conn: ['Neck servo ring', 'Neck rams × 4', 'Signal loom'] }),
+  jaw: () => ({ title: 'Muzzle actuator', id: 'VX-ACT // 83', cat: 'Actuator · head', desc: 'Small ram pair that opens the lower jaw for close-range manipulation and exhaust.', rows: [['Open', () => deg(Math.max(jawOpen, jawMan.open))], ['Rams', '2 × 60 bar']] }),
+  fore: () => ({ title: 'Fore chassis', id: 'VX-CH // 01', cat: 'Structure', desc: 'Front frame holding the kinetic core, power packs and shoulder servos. Its ribs breathe with the thermal cycle.', rows: [['Height', () => Math.round((pc('bh') + bodyMan.v[0]) * 1000) + ' mm'], ['Pitch', () => deg(pc('bp') + bodyMan.v[1])], ['Mass', '48 kg']], conn: ['Kinetic spine', 'Neck collar'] }),
+  spine: () => ({ big: true, title: 'Kinetic spine', id: 'VX-SP // 00', cat: 'Primary structure', desc: 'Primary structural member connecting the fore and aft chassis. Routes power, control buses and mechanical load through six vertebrae, two spine rams and a sealed bellows.', rows: [['Vertebrae', '6'], ['Rams', '2 × 240 bar'], ['Flex', '±6° pitch · ±4° yaw'], ['Load', liveLoad(), () => servoLoad]], conn: ['Fore chassis', 'Aft chassis', 'Waist rails', 'Power bus'] }),
+  aft: () => ({ title: 'Aft chassis', id: 'VX-CH // 02', cat: 'Structure', desc: 'Rear frame carrying the hip actuators, thermal vents and the tail root.', rows: [['Roll', () => deg(pc('br') + bodyMan.v[2])], ['Mass', '41 kg']], conn: ['Kinetic spine', 'Balance tail'] }),
+  tail: () => ({ big: true, title: 'Balance tail array', id: 'VX-TL // 12', cat: 'Counter-mass', desc: 'Twelve-segment counter-mass. Swings against the chassis during weight transfer and stabilises fast turns.', rows: [['Segments', '12'], ['Joint limit', '±29° yaw · −26° / +49° pitch'], ['Mass', '6.2 kg'], ['Mode', () => tailMan.mode === 'grab' ? 'MANUAL' : 'BALANCING']], conn: ['Aft chassis'] }),
+};
+function legMeta(L, role) {
+  const s = legOf(L).side, fr = L.front;
+  const joint = () => deg(L.lower.rotation.z), load = () => pct(L.load / 2.4), lf = () => L.lift < .01 ? 'PLANTED' : 'LIFTED · ' + Math.round(L.lift * 1000) + ' mm';
+  if (role === 'upper') return { big: true, title: (fr ? 'Shoulder drive ' : 'Hip drive ') + s, id: fr ? 'VX-LEG // 01' : 'VX-LEG // 05', cat: 'Kinematic chain · ' + (fr ? 'foreleg' : 'hind leg'), desc: fr ? 'Upper foreleg: the shoulder servo and a 280-bar ram behind the humerus lift and swing the limb.' : 'Upper hind leg: hip servo plus the glute ram drive the femur; the stifle ram sits on its front face.', rows: [['Upper joint', () => deg(L.upper.rotation.z)], ['Load', load, () => L.load / 2.4], ['Rams', fr ? '2 × 280 bar' : '2 × 320 bar'], ['Foot', lf]], conn: [fr ? 'Shoulder servo' : 'Hip servo', fr ? 'Power pack' : 'Hip actuator'] };
+  if (role === 'lower') return { big: true, title: (fr ? 'Forearm actuator ' : 'Stifle actuator ') + s, id: fr ? 'VX-ACT // 06' : 'VX-ACT // 10', cat: 'Actuator · ' + (fr ? 'foreleg' : 'hind leg'), desc: fr ? 'Forearm with the triceps and wrist rams. Each ram re-solves its stroke from its two mounting points every frame.' : 'Shin with the stifle and hock rams — the hock ram works like an Achilles tendon.', rows: [['Joint', joint], ['Load', load, () => L.load / 2.4], ['Pressure', fr ? '280 bar' : '320 bar'], ['Foot', lf]], conn: ['Upper limb', 'Paw module'] };
+  return { title: 'Paw module ' + s, id: 'VX-PAW // ' + s, cat: 'End effector', desc: 'Digitigrade foot and paw: rubber pads, four articulated toes and chrome claws. The IK keeps the paw level with the floor.', rows: [['Contact', lf], ['Toes', '4 · articulated'], ['Pads', 'nitrile · 70 Shore']] };
+}
+const sideOf = n => { const m = n.match(/\s((?:F|H)?[LR]|\d+)$/); return m ? m[1] : ''; };
+function metaForPart(p) {
+  const key = Object.keys(META).filter(k => p.name.startsWith(k)).sort((a, b) => b.length - a.length)[0];
+  const m = key ? META[key] : { id: 'VX-CMP', cat: p.cls, desc: 'Component of the VX-11 chassis.', rows: [] };
+  const s = sideOf(p.name);
+  const rows = m.rows.map(r => r[1] === null ? ['Load', () => { const L = legs.find(l => l.pServo === p); return L ? pct(L.load / 2.4) : '—'; }, () => { const L = legs.find(l => l.pServo === p); return L ? L.load / 2.4 : 0; }] : r);
+  return { ...m, rows, title: m.title ? m.title(s) : p.name, id: m.id + (s && !m.id.endsWith(s) ? '-' + s : ''), cat: m.cat, cls: p.cls };
+}
+function metaForZone(z, role) {
+  if (z.kind === 'leg') return legMeta(z.leg, role === 'foot' || role === 'paw' ? 'paw' : role);
+  if (z.kind === 'body') return ZMETA[role || 'spine']();
+  if (z.kind === 'ear') return metaForPart(pFins[z.ear]);
+  return (ZMETA[z.kind] || ZMETA.head)();
+}
+// access path: which parts must come off (in order) before this one is reachable
+function accessSteps(p, seen = new Set()) {
+  const out = [];
+  for (const c of p.covers) {
+    if (c.kind === 'hatch') { out.push({ name: 'Open ' + c.name.toLowerCase(), done: !covering(c) }); continue; }
+    const q = c.kind === 'socket' ? c.occupant : c;
+    if (!q || seen.has(q)) { if (c.kind === 'socket') out.push({ name: 'Remove ' + (c.occupant ? c.occupant.name : c.name).toLowerCase(), done: !c.occupant }); continue; }
+    seen.add(q); out.push(...accessSteps(q, seen)); out.push({ name: 'Remove ' + q.name.toLowerCase(), done: !covering(c) });
+  }
+  return out;
+}
+
+// ============================================================ FOCUS MODE + CARD
+const cardEl = $('card');
+let focusHist = [], focusIdx = -1, cardRows = [];
+function describe(pk) {
+  if (pk.kind === 'part') { const p = pk.part; return { key: 'p:' + p.name, obj: p.pg, size: p.size, lb: p.lb, lbObj: p.pg, part: p, meta: metaForPart(p) }; }
+  if (pk.kind === 'hatch') { const h = pk.hatch; return { key: 'h:' + h.name, obj: h.anchor, size: .22, lb: h.lb, lbObj: h.inner, hatch: h, meta: { title: h.name, id: 'VX-SVC // 0' + (h.s > 0 ? '1' : '2'), cat: 'Service hatch · serviceable', desc: 'Hinged access door over the core bay. Open it to reach the core shroud and the drive gearset.', rows: [['Open', () => pct(h.open), () => h.open], ['Hinge', '0 – 75°'], ['Latch', 'magnetic · 4 pins']] } }; }
+  const box = pk.hit.object, role = box.userData.role || box.userData.seg !== undefined && 'tail';
+  box.geometry.computeBoundingBox();
+  const lb = box.geometry.boundingBox.clone();
+  return { key: 'z:' + pk.zone.name + ':' + (box.userData.role || ''), obj: box, size: Math.max(.1, lb.getSize(V()).length() / 2), lb, lbObj: box, zone: pk.zone, meta: metaForZone(pk.zone, box.userData.role) };
+}
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+function renderCard(d) {
+  const m = d.meta;
+  $('cardCat').textContent = m.cat.toUpperCase();
+  $('cardTitle').textContent = m.title;
+  $('cardId').replaceChildren(el('span', '', m.id), el('i'), el('span', 'cls', d.part ? d.part.cls : d.hatch ? 'serviceable' : 'kinematic'));
+  $('cardDesc').textContent = m.desc;
+  const dl = $('cardRows'); dl.replaceChildren(); cardRows = [];
+  (m.rows || []).slice(0, m.big ? 6 : 4).forEach(([k, v, bar]) => {
+    const dt = el('dt', '', k), dd = el('dd', '', typeof v === 'function' ? v() : v);
+    dl.append(dt, dd);
+    let b = null; if (bar) { b = el('i', 'bar'); b.append(el('em')); dl.append(b); }
+    cardRows.push({ dd, v, bar, b });
+  });
+  renderDeps(d);
+  $('cardPrev').disabled = focusIdx <= 0; $('cardNext').disabled = focusIdx >= focusHist.length - 1;
+  cardEl.classList.remove('on'); void cardEl.offsetWidth; cardEl.classList.add('on');
+  document.body.classList.add('focused');
+}
+// state chip + mount / dependency blocks; re-rendered in place whenever the part's situation changes
+function partSituation(p) {
+  if (p.state !== 'mounted' && p.state !== 'pull' && p.state !== 'unpull') return ['Detached', 'amber'];
+  if (p.socket !== p.home) return ['Swapped', ''];
+  return blockedBy(p) ? ['Locked', 'amber'] : ['', ''];
+}
+let depsSig = '';
+function renderDeps(d) {
+  const m = d.meta, deps = $('cardDeps'); deps.replaceChildren();
+  const block = (label, items, cls = '') => { if (!items.length) return; const w = el('div', 'dep' + (cls ? ' ' + cls : '')); w.append(el('b', '', label)); items.forEach(it => w.append(el('span', it.done ? 'done' : it.next ? 'next' : '', it.name || it))); deps.append(w); };
+  let chip = ['', ''];
+  if (d.part) {
+    const p = d.part, mounted = p.state === 'mounted' || p.state === 'pull' || p.state === 'unpull';
+    chip = partSituation(p);
+    block('Mount', [mounted ? (p.socket === p.home ? 'home socket · ' + typeLabel(p.type) : 'swapped into ' + p.socket.name + ' · home ' + p.home.name) : 'free · home socket ' + p.home.name + ' · ' + typeLabel(p.type)]);
+    if (mounted) block('Mounted under', p.covers.filter(covering).map(c => c.kind === 'socket' ? c.occupant.name : c.name));
+    block('Connected to', m.conn || []);
+    if (mounted) { const st = accessSteps(p), nx = st.find(s => !s.done); if (nx) nx.next = true; if (st.some(s => !s.done)) block('Access path', st, 'steps'); }
+  } else block('Connected to', m.conn || []);
+  $('cardState').textContent = chip[0]; $('cardState').className = chip[1];
+  cardEl.classList.toggle('warn', chip[1] === 'amber');
+  depsSig = cardSig(d);
+}
+const cardSig = d => d.part ? d.part.state.replace(/^(un)?pull$/, 'mounted') + '|' + (d.part.socket ? d.part.socket.name : '') + '|' + accessSteps(d.part).map(s => +s.done).join('') : '';
+function updateCardLive() {
+  if (!focus || !focus.desc) return;
+  cardRows.forEach(r => { if (typeof r.v === 'function') r.dd.textContent = r.v(); if (r.b) r.b.firstChild.style.width = clamp(r.bar(), .02, 1) * 100 + '%'; });
+  if (cardSig(focus.desc) !== depsSig) renderDeps(focus.desc);
+}
+let zoomG = 1, zoomGT = 1, zoomF = 1, zoomFT = 1;
+function focusOn(d, push = true) {
+  interacted = true;
+  // keep the operator's heading, but settle into a slightly raised three-quarter elevation
+  focus = { obj: d.obj, d: clamp(d.size * 6.2, .62, 2.6), az: camS.az / D, el: clamp(camS.el / D, 5, 38), desc: d };
+  zoomFT = 1; orbAz = orbEl = 0;
+  if (push) { focusHist = focusHist.slice(0, focusIdx + 1).filter(h => h.key !== d.key); focusHist.push(d); if (focusHist.length > 12) focusHist.shift(); focusIdx = focusHist.length - 1; }
+  renderCard(d);
+}
+function clearFocus() { if (!focus) return; focus = null; cardEl.classList.remove('on'); document.body.classList.remove('focused'); orbAz = orbEl = 0; }
+$('cardClose').addEventListener('click', clearFocus);
+$('cardPrev').addEventListener('click', () => { if (focusIdx > 0) { focusIdx--; focusOn(focusHist[focusIdx], false); } });
+$('cardNext').addEventListener('click', () => { if (focusIdx < focusHist.length - 1) { focusIdx++; focusOn(focusHist[focusIdx], false); } });
+// wheel: distance-aware zoom (multiplicative -> fast when far, fine when close).
+// Inspect keeps the scroll sequence; zoom there with Shift+wheel.
+addEventListener('wheel', e => {
+  if (e.target.closest && e.target.closest('#card, #ctrl, .rail')) return;
+  if (!(focus || mode === 'assembly' || explodeOn || e.shiftKey)) return;
+  e.preventDefault();
+  const dy = e.deltaY || e.deltaX, k = Math.exp(clamp(dy, -200, 200) * .0012);
+  if (focus) zoomFT = clamp(zoomFT * k, .3, 4); else zoomGT = clamp(zoomGT * k, .25, 5);
+}, { passive: false });
+
+// ============================================================ POSES — base pose layer (springs), idle and manual edits ride on top
+const NL = 11 + 12 + 24;
+function mkPose(o = {}) {
+  const v = new Float32Array(NL);
+  const b = { bh: 0, bp: 0, br: 0, by: 0, bx: 0, hy: 0, hp: 0, t0: .42, tc: -.135, tw: 0, ear: 0, ...o };
+  ['bh', 'bp', 'br', 'by', 'bx', 'hy', 'hp', 't0', 'tc', 'tw', 'ear'].forEach((k, i) => v[i] = b[k]);
+  (o.legs || []).forEach((l, i) => { if (l) { v[11 + i * 3] = l[0]; v[12 + i * 3] = l[1]; v[13 + i * 3] = l[2]; } });
+  return v;
+}
+const PRESETS = {
+  neutral: mkPose(),
+  alert: mkPose({ bh: .05, bp: .08, hp: .26, t0: .18, tc: -.07, ear: .05, legs: [[-.02, 0, 0], [-.02, 0, 0]] }),
+  prowl: mkPose({ bh: -.2, bp: -.05, hp: -.1, t0: .14, tc: -.02, ear: -.35, legs: [[.06, 0, 0], [.06, 0, 0], [-.06, 0, 0], [-.06, 0, 0]] }),
+  sprint: mkPose({ bh: -.05, bp: -.04, hp: .02, t0: .06, tc: .012, tw: -.1, ear: -.55, legs: [[.72, .13, .01], [-.2, .02, 0], [-.6, .07, 0], [.14, .05, 0]] }),
+  crouch: mkPose({ bh: -.32, bp: .04, hp: .3, t0: .5, tc: -.02, ear: -.2, legs: [[.1, 0, .01], [.1, 0, .01], [-.12, 0, .01], [-.12, 0, .01]] }),
+  hero: mkPose({ bh: .03, bp: .06, br: -.05, by: .12, hy: -.35, hp: .12, t0: .3, tc: -.18, tw: .3, legs: [[.14, .2, .02], null, null, [-.06, 0, 0]] }),
+};
+// per-pose limb profile, one row per leg (FL FR HL HR):
+// reach 0..1 — metacarpus/metatarsus swings onto the limb line so the elbow/hock opens (a residual mechanical bend is kept by the solver)
+// tilt — paw pitch, + toes down; scap — scapula / hip slide along the chassis
+const PRESET_IK = {
+  sprint: [[1, -.5, .055], [.55, .45, -.015], [1, .9, -.02], [.2, -.1, .01]],
+  prowl: [[.15, 0, .02], [.15, 0, .02], [0, 0, 0], [0, 0, 0]],
+  hero: [[.35, -.2, .03], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+};
+const ikT = new Float32Array(12), ikC = new Float32Array(12), ikV = new Float32Array(12);
+const setIk = name => { ikT.fill(0); (PRESET_IK[name] || []).forEach((l, i) => l.forEach((v, c) => ikT[i * 3 + c] = v)); };
+const poseC = PRESETS.neutral.slice(), poseV = new Float32Array(NL), poseT = PRESETS.neutral.slice();
+const PI_ = { bh: 0, bp: 1, br: 2, by: 3, bx: 4, hy: 5, hp: 6, t0: 7, tc: 8, tw: 9, ear: 10 };
+const pc = k => poseC[PI_[k]];
+const legPose = (i, out) => out.set(poseC[11 + i * 3], poseC[12 + i * 3], poseC[13 + i * 3]);
+let poseName = 'neutral', holdEdits = false;
+let customs = [];
+try { customs = JSON.parse(localStorage.getItem('vx11-poses') || '[]').map(a => Float32Array.from(a)).filter(a => a.length === NL); } catch (e) { customs = []; }
+function setPose(name) { const src = name.startsWith('custom:') ? customs[+name.slice(7)] : PRESETS[name]; if (!src) return; poseT.set(src); setIk(name); poseName = name; renderPoseUI(); }
+function stepPose(dt) {
+  const w = 5.2;
+  for (let i = 0; i < NL; i++) { poseV[i] += (w * w * (poseT[i] - poseC[i]) - 2 * w * poseV[i]) * dt; poseC[i] += poseV[i] * dt; }
+  for (let i = 0; i < 12; i++) { ikV[i] += (w * w * (ikT[i] - ikC[i]) - 2 * w * ikV[i]) * dt; ikC[i] += ikV[i] * dt; }
+}
+function mergeIntoPose(i, d) { poseT[i] += d; poseC[i] += d; }
+
+// ============================================================ INPUT
+const pointer = new THREE.Vector2(0, 0), pointerS = new THREE.Vector2(0, 0);
+let hasPointer = false, camDrag = false, lastX = 0, lastY = 0, pxX = 0, pxY = 0;
+let orbAz = 0, orbEl = 0, orbVAz = 0, orbVEl = 0, idleOrbit = 0;
+let grabbed = null, hover = null, hoverZone = null, interacted = false, eyeFlash = 0, mode = 'inspect', focus = null, lockMsg = null;
+let explodeOn = false, explodeK = 0, snapInfo = null, assemblyHintT = -99;
+const grabCtx = { plane: new THREE.Plane(), sx: 0, sy: 0, ey: 0, ez: 0, w0: V(), dirW: V(), off: V(), lx: 0, ly: 0, open0: 0 };
+const raycaster = new THREE.Raycaster();
+const _a = V(), _b = V(), _c = V(), _qa = new THREE.Quaternion(), _qb = new THREE.Quaternion();
+function setPointer(e) { pxX = e.clientX; pxY = e.clientY; pointer.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); hasPointer = true; }
+function rayOnPlane(out) { raycaster.setFromCamera(pointer, camera); return raycaster.ray.intersectPlane(grabCtx.plane, out); }
+const isFree = p => p.state === 'free' || p.state === 'drag' || p.state === 'rot';
+// mode-aware picking over small registries only (hitboxes / part meshes / hatches / a few occluders)
+function pickAll() {
+  raycaster.setFromCamera(pointer, camera);
+  let list;
+  if (mode === 'assembly') list = pickMeshes.concat(hatchMeshes, occluders);
+  else { list = hitMeshes.filter(m => m.userData.zone.enabled()); PARTS.forEach(p => { if (isFree(p)) list = list.concat(p.meshes); }); }
+  const hits = raycaster.intersectObjects(list, false), cands = [];
+  for (const h of hits) {
+    const u = h.object.userData; let c;
+    if (u.part) { if (u.part.state === 'fly') continue; if (mode !== 'assembly' && !isFree(u.part)) continue; c = { kind: 'part', part: u.part, hit: h }; }
+    else if (u.hatch) c = { kind: 'hatch', hatch: u.hatch, hit: h };
+    else if (u.zone) c = { kind: 'zone', zone: u.zone, hit: h };
+    else c = { kind: 'occ', hit: h };
+    cands.push(c); if (cands.length >= 6) break;
+  }
+  if (!cands.length) return null;
+  // among hits within a few cm of the nearest one, prefer the most logical target:
+  // detached parts > reachable removable parts > small details > the rest; fixed structure never wins
+  const d0 = cands[0].hit.distance;
+  const score = c => {
+    if (c.kind === 'occ') return -1;
+    let v = 0;
+    if (c.kind === 'part') { const p = c.part; if (isFree(p)) v += 4; if (!(p.state === 'mounted' && blockedBy(p))) v += 2; if (p.size < .09) v += 1; }
+    else v += 1.5;
+    return v - (c.hit.distance - d0) * 12;
+  };
+  // an enlarged pick proxy only helps over empty space: when real geometry of another component sits in the same
+  // few centimetres, the visible surface wins, so thin parts never steal the cursor from their neighbours
+  const isProxy = c => !!c.hit.object.userData.proxy, tgtOf = c => c.part || c.hatch || c.zone;
+  const solid = cands.filter(c => c.kind !== 'occ' && !isProxy(c) && c.hit.distance - d0 <= .15);
+  const win = cands.filter(c => c.hit.distance - d0 <= .06 || (isProxy(cands[0]) && solid.includes(c)));
+  const sc = c => score(c) - (c.hit.object.userData.proxy && solid.some(o => tgtOf(o) !== tgtOf(c)) && !solid.some(o => tgtOf(o) === tgtOf(c)) ? 3 : 0);
+  let best = win[0], bs = sc(best);
+  for (const c of win) { const v = sc(c); if (v > bs) { bs = v; best = c; } }
+  return best.kind === 'occ' ? null : best;
+}
+function planeAt(point) { camera.getWorldDirection(_a); grabCtx.plane.setFromNormalAndCoplanarPoint(_a, point); }
+function startGrab(pk, e) {
+  interacted = true; grabCtx.sx = pxX; grabCtx.sy = pxY; grabCtx.lx = pxX; grabCtx.ly = pxY;
+  if (pk.kind === 'zone') {
+    const z = pk.zone, hit = pk.hit; grabbed = z; planeAt(hit.point);
+    if (z.kind === 'head') {
+      headMan.mode = 'grab'; headMan.yaw = look.yaw + pc('hy'); headMan.pitch = look.pitch + pc('hp'); headMan.vy = headMan.vp = 0;
+      headMan.g0.copy(pointer); head.getWorldPosition(_hp); headPt(headMan.yaw, headMan.pitch, headMan.c0);
+      eyeFlash = 1; apertureT = .28; apNext = 1.6;
+    } else if (z.kind === 'leg') { const m = z.leg.man; m.mode = 'grab'; m.offset.copy(hit.point).sub(m.cur); z.leg.stepT = 1; }
+    else if (z.kind === 'tail') { tailMan.mode = 'grab'; tailMan.k = hit.object.userData.seg; tailMan.local.copy(tail[tailMan.k].g.worldToLocal(hit.point.clone())); tailMan.a = tailMan.off[tailMan.k * 2] / tailW(tailMan.k); tailMan.b = tailMan.off[tailMan.k * 2 + 1] / tailW(tailMan.k); }
+    else if (z.kind === 'ear') { const st = earState[z.ear]; st.mode = 'grab'; grabCtx.ey = st.y; grabCtx.ez = st.z; }
+    else if (z.kind === 'body') { bodyMan.mode = 'grab'; bodyMan.w0.copy(hit.point); bodyMan.s0 = bodyMan.v.slice(); bodyMan.fx = clamp(body.worldToLocal(hit.point.clone()).x / .8, -1, 1); }
+    else if (z.kind === 'jaw') { jawMan.mode = 'grab'; jawMan.o0 = jawMan.open; }
+  } else if (pk.kind === 'part') {
+    const p = pk.part, bl = p.state === 'mounted' ? blockedBy(p) : null;
+    if (bl) { lockMsg = { part: p, cover: bl, t: 1.6 }; p.shake = 1; return false; }
+    if ((e && (e.button === 2 || e.shiftKey)) && isFree(p)) { grabbed = { kind: 'rot', part: p, name: p.name }; p.state = 'rot'; }
+    else if (p.state === 'mounted') { grabbed = { kind: 'part', part: p, name: p.name }; p.state = 'pull'; planeAt(pk.hit.point); grabCtx.w0.copy(pk.hit.point); grabCtx.dirW.copy(p.socket.dir).transformDirection(p.socket.parent.matrixWorld); }
+    else { grabbed = { kind: 'part', part: p, name: p.name }; p.state = 'drag'; grabCtx.catchUp = false; planeAt(p.pg.position); rayOnPlane(_b) && grabCtx.off.copy(p.pg.position).sub(_b); }
+  } else if (pk.kind === 'hatch') { grabbed = { kind: 'hatch', hatch: pk.hatch, name: pk.hatch.name }; grabCtx.open0 = pk.hatch.open; }
+  document.body.classList.add('grabbing');
+  return true;
+}
+function detach(p) {
+  p.pg.parent.updateWorldMatrix(true, false); p.pg.updateMatrixWorld(true);
+  if (p.socket) p.socket.occupant = null;
+  p.socket = null; p.pull = 0; scene.attach(p.pg); p.state = 'drag';
+  planeAt(p.pg.position); if (rayOnPlane(_b)) grabCtx.off.copy(p.pg.position).sub(_b); else grabCtx.off.set(0, 0, 0);
+  grabCtx.catchUp = true; // the pull lag is not user intent: the freed part settles under the cursor
+}
+// a rejected drop (occupied / incompatible mount) is pushed off the socket in the view plane,
+// so it never ends up parked in front of the part that already sits there
+function repel(p, s) {
+  socketWorld(s, _sw); camera.getWorldDirection(_c);
+  _a.copy(p.pg.position).sub(_sw); _a.addScaledVector(_c, -_a.dot(_c));
+  if (_a.lengthSq() < 1e-6) _a.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  p.drift = _sw.clone().addScaledVector(_a.normalize(), s.r * 1.4 + p.size * 1.2 + .05); p.shake = .7;
+}
+function mountTo(p, s) { p.pg.updateMatrixWorld(true); s.parent.updateWorldMatrix(true, false); s.parent.attach(p.pg); p.socket = s; s.occupant = p; p.state = 'mounted'; p.target = null; p.pull = 0; p.seat = 1; s.flash = 1; }
+function flyTo(p, s) {
+  if (p.state === 'mounted') { p.pg.parent.updateWorldMatrix(true, false); p.pg.updateMatrixWorld(true); if (p.socket) p.socket.occupant = null; p.socket = null; scene.attach(p.pg); }
+  p.state = 'fly'; p.target = s; s.occupant = p;
+}
+function release() {
+  if (!grabbed) return;
+  const z = grabbed; grabbed = null;
+  if (z.kind === 'head') {
+    if (holdEdits) { const tp = look.tPitch; mergeIntoPose(PI_.hy, headMan.yaw - look.tYaw - pc('hy')); mergeIntoPose(PI_.hp, headMan.pitch - tp - pc('hp')); look.yaw = look.tYaw; look.pitch = tp; headMan.mode = 'idle'; look.next = 1.5; }
+    else headMan.mode = 'return';
+  } else if (z.kind === 'leg') {
+    const m = z.leg.man, i = legs.indexOf(z.leg);
+    if (holdEdits) { for (let c = 0; c < 3; c++) mergeIntoPose(11 + i * 3 + c, m.delta.getComponent(c)); m.delta.set(0, 0, 0); m.vel.set(0, 0, 0); m.mode = 'idle'; }
+    else m.mode = 'return';
+  } else if (z.kind === 'tail') {
+    if (holdEdits) { for (let i = 0; i < 24; i++) { mergeIntoPose(23 + i, tailMan.off[i]); tailMan.off[i] = 0; tailMan.vel[i] = 0; } tailMan.mode = 'idle'; }
+    else tailMan.mode = 'return';
+  } else if (z.kind === 'ear') {
+    const st = earState[z.ear];
+    if (holdEdits) { mergeIntoPose(PI_.ear, (st.z - st.iz) * .5); st.mode = 'return'; } else st.mode = 'return';
+  } else if (z.kind === 'body') {
+    if (holdEdits) { [PI_.bh, PI_.bp, PI_.br, PI_.by, PI_.bx].forEach((pi, c) => mergeIntoPose(pi, bodyMan.v[c])); bodyMan.v.fill(0); bodyMan.vel.fill(0); bodyMan.mode = 'idle'; }
+    else bodyMan.mode = 'return';
+  } else if (z.kind === 'jaw') jawMan.mode = 'return';
+  else if (z.kind === 'part') {
+    const p = z.part;
+    if (p.state === 'pull') p.state = 'unpull';
+    else if (p.state === 'drag') { if (snapInfo && snapInfo.ready) flyTo(p, snapInfo.s); else { p.state = 'free'; if (snapInfo && !snapInfo.ok) repel(p, snapInfo.s); } }
+  } else if (z.kind === 'rot') z.part.state = 'free';
+  document.body.classList.remove('grabbing');
+}
+addEventListener('pointermove', e => {
+  setPointer(e);
+  if (camDrag) { const dx = e.clientX - lastX, dy = e.clientY - lastY; orbVAz -= dx * .0035; orbVEl += dy * .0022; lastX = e.clientX; lastY = e.clientY; idleOrbit = 0; }
+});
+const uiTarget = e => e.target.closest && e.target.closest('.rail, #ctrl');
+addEventListener('pointerdown', e => {
+  if (uiTarget(e) || e.pointerType === 'touch') return;
+  if (e.button !== 0 && e.button !== 2) return;
+  setPointer(e);
+  const pk = T > 4.6 ? pickAll() : null;
+  if (pk && !(e.button === 2 && !(pk.kind === 'part' && isFree(pk.part)))) { if (startGrab(pk, e) !== false) e.preventDefault(); return; }
+  if (e.button !== 0) return;
+  camDrag = true; lastX = e.clientX; lastY = e.clientY; document.body.classList.add('dragging');
+});
+const endDrag = () => { release(); camDrag = false; document.body.classList.remove('dragging'); };
+addEventListener('pointerup', endDrag);
+addEventListener('blur', endDrag);
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('dblclick', e => {
+  if (e.target.closest && e.target.closest('.rail, #ctrl, #card')) return;
+  setPointer(e);
+  const pk = pickAll();
+  if (!pk) { clearFocus(); return; }
+  focusOn(describe(pk));
+});
+addEventListener('keydown', e => { if (e.key === 'Escape') clearFocus(); });
+document.addEventListener('pointerleave', () => { hasPointer = false; });
+let scrollP = 0;
+const onScroll = () => { const max = document.documentElement.scrollHeight - innerHeight; scrollP = max > 0 ? clamp(scrollY / max, 0, 1) : 0; };
+addEventListener('scroll', onScroll, { passive: true }); onScroll();
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
+  bloom.setSize(innerWidth / 2, innerHeight / 2); grade.uniforms.uRes.value.set(innerWidth, innerHeight); onScroll();
+});
+
+// ---- HUD controls
+const ctrlEl = $('ctrl'), poseEl = $('poses');
+function renderPoseUI() {
+  const names = [['neutral', 'Neutral'], ['alert', 'Alert'], ['prowl', 'Prowl'], ['sprint', 'Sprint'], ['crouch', 'Crouch'], ['hero', 'Hero']];
+  customs.forEach((c, i) => names.push(['custom:' + i, 'Custom ' + String(i + 1).padStart(2, '0')]));
+  poseEl.replaceChildren(...names.map(([k, n]) => { const b = document.createElement('button'); b.dataset.pose = k; b.textContent = n; if (k === poseName) b.className = 'on'; return b; }));
+  $('hold').classList.toggle('on', holdEdits);
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  $('explode').textContent = explodeOn ? 'Assemble' : 'Exploded view';
+  $('explode').classList.toggle('on', explodeOn);
+}
+ctrlEl.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  interacted = true;
+  if (b.dataset.pose) setPose(b.dataset.pose);
+  else if (b.dataset.mode) { mode = b.dataset.mode; if (mode === 'assembly') assemblyHintT = T; renderPoseUI(); }
+  else if (b.id === 'hold') { holdEdits = !holdEdits; renderPoseUI(); }
+  else if (b.id === 'save') {
+    // capture the base pose plus any held manual edits
+    customs.push(poseT.slice()); if (customs.length > 4) customs.shift();
+    try { localStorage.setItem('vx11-poses', JSON.stringify(customs.map(a => Array.from(a)))); } catch (err) {}
+    poseName = 'custom:' + (customs.length - 1); renderPoseUI();
+  }
+  else if (b.id === 'explode') { explodeOn = !explodeOn; renderPoseUI(); }
+  else if (b.id === 'reset') resetMachine();
+});
+function resetMachine() {
+  release();
+  // 1: pull every misplaced part off its socket, 2: send everything home
+  PARTS.forEach(p => { if ((p.state === 'mounted' || p.state === 'unpull' || p.state === 'pull') && p.socket && p.socket !== p.home) { p.pg.parent.updateWorldMatrix(true, false); p.pg.updateMatrixWorld(true); p.socket.occupant = null; p.socket = null; scene.attach(p.pg); p.state = 'free'; } });
+  PARTS.forEach(p => { if (p.state === 'mounted') return; if ((p.state === 'pull' || p.state === 'unpull') && p.socket === p.home) { p.state = 'unpull'; return; } p.state = 'fly'; p.target = p.home; p.home.occupant = p; });
+  hatches.forEach(h => h.open = 0);
+  explodeOn = false; clearFocus(); zoomGT = 1; orbAz = orbEl = 0;
+  poseT.set(PRESETS.neutral); setIk('neutral'); poseName = 'neutral';
+  legs.forEach(L => { if (L.man.mode !== 'idle') L.man.mode = 'return'; });
+  if (headMan.mode !== 'idle') headMan.mode = 'return';
+  if (tailMan.mode !== 'idle') tailMan.mode = 'return';
+  bodyMan.mode = 'return'; jawMan.mode = 'return';
+  renderPoseUI();
+}
+
+// ============================================================ ANIMATION STATE
+const clock = new THREE.Clock();
+let T = 0;               // time since reveal start
+let secS = 0;            // damped section position 0..5
+const look = { yaw: 0, pitch: 0, tYaw: 0, tPitch: 0, eyeYaw: 0, eyePitch: 0, next: 3 };
+let aperture = 1, apertureT = 1, apNext = 5, jawOpen = 0, jawNext = 9, jawT = 0;
+let ventOpen = 0, temp = 34, coreSpin = 0, coreRate = 0, fanRot = 0;
+let stepNext = 6, stepLeg = 2, trackW = 0, trackYaw = 0, trackPitch = 0;
+const earState = [{ y: 0, z: 0, ty: 0, tz: 0, n: 2, vy: 0, vz: 0, iz: 0, mode: 'idle' }, { y: 0, z: 0, ty: 0, tz: 0, n: 3.1, vy: 0, vz: 0, iz: 0, mode: 'idle' }];
+let hiAmt = 0, lastHudT = 0, servoLoad = 0;
+const SHOTS = [
+  { t: [.1, .78, 0], az: 40, el: 7, d: 5.6, fov: 30 },
+  { t: 'head', az: 58, el: 5, d: 1.75, fov: 30 },
+  { t: [.72, .52, .3], az: 16, el: 3, d: 2.35, fov: 30 },
+  { t: [.45, .95, .12], az: -2, el: 12, d: 2.7, fov: 30 },
+  { t: [-.95, .92, 0], az: -58, el: 15, d: 3.1, fov: 32 },
+  { t: [.05, .82, 0], az: 24, el: 2, d: 5.9, fov: 28 },
+];
+const camS = { az: 102 * D, el: -2 * D, d: 10.5, fov: 24, t: new THREE.Vector3(.2, .8, 0) };
+const shotTarget = (s, out) => s.t === 'head' ? headAnchor.getWorldPosition(out) : out.set(...s.t);
+function ik2(ax, ay, L1, L2, bend) {
+  let d = Math.hypot(ax, ay); d = clamp(d, Math.abs(L1 - L2) + 1e-4, L1 + L2 - 1e-4);
+  const th = Math.atan2(ay, ax);
+  const a1 = Math.acos(clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1, 1));
+  const al1 = th + bend * a1;
+  const kx = L1 * Math.cos(al1), ky = L1 * Math.sin(al1);
+  return [al1, Math.atan2(ay - ky, ax - kx)];
+}
+const Pw = V(), Aw = V(), creatureQ = new THREE.Quaternion(), tiltQ = new THREE.Quaternion(), ZAX = new THREE.Vector3(0, 0, 1);
+const _ikD = V(), _ikR = V();
+function solveLeg(leg, target) {
+  const reach = ikC[leg.i * 3];
+  leg.root.position.x = leg.root0.x + ikC[leg.i * 3 + 2];
+  Pw.copy(target);
+  // pose reach: the distal segment turns onto the paw -> shoulder line, so the whole limb extends instead of folding at the elbow
+  _ikD.copy(leg.ankleDir);
+  if (reach > .001) { leg.root.parent.localToWorld(_ikR.copy(leg.root.position)).sub(Pw).normalize(); _ikD.lerp(_ikR, clamp(reach, 0, 1) * .9).normalize(); }
+  Aw.copy(_ikD).multiplyScalar(leg.L[2]).add(Pw);
+  const T0 = leg.root.parent.worldToLocal(_v1.copy(Aw));
+  leg.root.rotation.x = clamp(-Math.atan2(T0.z - leg.root.position.z, -(T0.y - leg.root.position.y)), -.35, .35);
+  leg.root.updateMatrixWorld(true);
+  const Al = leg.root.worldToLocal(_v1.copy(Aw)), Pl = leg.root.worldToLocal(_v2.copy(Pw));
+  // joint constraints: the ankle may not fold into the body nor rise above the shoulder line,
+  // and the limb never locks dead straight (a residual mechanical bend stays visible)
+  Al.y = Math.min(Al.y, -.12);
+  const dmin = (leg.L[0] + leg.L[1]) * .2, dmax = (leg.L[0] + leg.L[1]) * .975, dl = Math.hypot(Al.x, Al.y);
+  if (dl < dmin) { Al.x *= dmin / dl; Al.y *= dmin / dl; }
+  else if (dl > dmax) { Al.x *= dmax / dl; Al.y *= dmax / dl; }
+  const [a1, a2] = ik2(Al.x, Al.y, leg.L[0], leg.L[1], leg.front ? -1 : 1);
+  leg.upper.rotation.z = a1 + Math.PI / 2;
+  leg.lower.rotation.z = a2 - a1;
+  leg.foot.rotation.z = Math.atan2(Pl.y - Al.y, Pl.x - Al.x) - a2;
+  leg.upper.updateMatrixWorld(true);
+  leg.foot.getWorldQuaternion(_q);
+  leg.paw.quaternion.copy(_q.invert()).multiply(creatureQ).multiply(tiltQ.setFromAxisAngle(ZAX, -(leg.tilt || 0)));
+  leg.gear0.rotation.z = -leg.upper.rotation.z * 2.6;
+  leg.gear1.rotation.z = leg.lower.rotation.z * 3.1;
+  leg.load = Math.abs(leg.lower.rotation.z);
+}
+const bez = (a, b, c, t, out) => out.set(0, 0, 0).addScaledVector(a, (1 - t) * (1 - t)).addScaledVector(b, 2 * (1 - t) * t).addScaledVector(c, t * t);
+const want = new THREE.Quaternion(), wantE = new THREE.Euler(0, 0, 0, 'YZX');
+const sA = V(), sB = V(), sC = V();
+
+// head grab: damped least-squares in screen space on a muzzle lever
+const _hp = V(), _hq = new THREE.Quaternion(), _he = new THREE.Euler(0, 0, 0, 'YZX'), _hA = V(), _hB = V(), _hC = V();
+const HEAD_YAW = .8, HEAD_PMIN = -.42, HEAD_PMAX = .45;
+function headPt(yaw, pitch, out) { _he.set(0, yaw, pitch); _hq.setFromEuler(_he); out.copy(headMan.local).applyQuaternion(_hq).add(_hp).project(camera); out.x *= camera.aspect; return out; }
+function solveHeadGrab(dt) {
+  head.getWorldPosition(_hp);
+  const y = headMan.yaw, p = headMan.pitch, e = .02;
+  headPt(y, p, _hA); headPt(y + e, p, _hB); headPt(y, p + e, _hC);
+  const j11 = (_hB.x - _hA.x) / e, j21 = (_hB.y - _hA.y) / e, j12 = (_hC.x - _hA.x) / e, j22 = (_hC.y - _hA.y) / e;
+  const ex = headMan.c0.x + (pointer.x - headMan.g0.x) * camera.aspect - _hA.x, ey = headMan.c0.y + (pointer.y - headMan.g0.y) - _hA.y, lam = .004;
+  const a = j11 * j11 + j21 * j21 + lam, b = j11 * j12 + j21 * j22, c = j12 * j12 + j22 * j22 + lam;
+  const r1 = j11 * ex + j21 * ey, r2 = j12 * ex + j22 * ey, det = a * c - b * b;
+  if (Math.abs(det) < 1e-10) return;
+  const dY = clamp((c * r1 - b * r2) / det, -.12, .12), dP = clamp((a * r2 - b * r1) / det, -.12, .12);
+  const ny = clamp(y + dY * .55, -HEAD_YAW, HEAD_YAW), np = clamp(p + dP * .55, HEAD_PMIN, HEAD_PMAX);
+  const k = Math.max(dt, 1e-3);
+  headMan.vy = lerp(headMan.vy, (ny - y) / k, .35); headMan.vp = lerp(headMan.vp, (np - p) / k, .35);
+  headMan.yaw = ny; headMan.pitch = np;
+}
+// tail: bend spread over the joints up to the grab point -> one smooth arc
+const _tG = V(), _tR = V(), _tL = V();
+const TAIL_Y = .5, TAIL_ZMIN = -.45, TAIL_ZMAX = .85;
+function limitTail(j) {
+  const s = tail[j], o = tailMan.off;
+  const ry = clamp(s.bY + o[j * 2], -TAIL_Y, TAIL_Y), rz = clamp(s.bZ + o[j * 2 + 1], j === 0 ? -.15 : TAIL_ZMIN, TAIL_ZMAX);
+  o[j * 2] = ry - s.bY; o[j * 2 + 1] = rz - s.bZ; s.g.rotation.set(0, ry, rz);
+}
+const tailW = j => .55 + .9 * j / Math.max(1, tailMan.k);
+const _tE0 = V(), _tEa = V(), _tEb = V();
+function tailSet(a, b, out) {
+  const o = tailMan.off;
+  for (let j = 0; j <= tailMan.k; j++) { o[j * 2] = a * tailW(j); o[j * 2 + 1] = b * tailW(j); limitTail(j); }
+  tail[0].g.updateMatrixWorld(true);
+  return tail[tailMan.k].g.localToWorld(out.copy(tailMan.local));
+}
+function solveTail(dt) {
+  const o = tailMan.off, k = tailMan.k;
+  tailMan.prev.set(o);
+  if (rayOnPlane(_tG)) {
+    tail[0].g.getWorldPosition(_tR);
+    _tG.x = Math.min(_tG.x, _tR.x - .12);
+    _tG.y = clamp(_tG.y, G + .14, _tR.y + .7);
+    let A = tailMan.a, B = tailMan.b; const e = .01, lam = .0004;
+    for (let it = 0; it < 3; it++) {
+      tailSet(A, B, _tE0); tailSet(A + e, B, _tEa); tailSet(A, B + e, _tEb);
+      _tEa.sub(_tE0).divideScalar(e); _tEb.sub(_tE0).divideScalar(e); _tL.copy(_tG).sub(_tE0);
+      const aa = _tEa.dot(_tEa) + lam, ab = _tEa.dot(_tEb), bb = _tEb.dot(_tEb) + lam, ra = _tEa.dot(_tL), rb = _tEb.dot(_tL), det = aa * bb - ab * ab;
+      if (Math.abs(det) < 1e-12) break;
+      A = clamp(A + clamp((bb * ra - ab * rb) / det, -.08, .08) * .7, -.32, .32);
+      B = clamp(B + clamp((aa * rb - ab * ra) / det, -.08, .08) * .7, -.3, .3);
+    }
+    tailMan.a = A; tailMan.b = B; tailSet(A, B, _tE0);
+  }
+  const idt = 1 / Math.max(dt, 1e-3);
+  for (let j = 0; j <= k; j++) for (let c = 0; c < 2; c++) { const i = j * 2 + c; tailMan.vel[i] = lerp(tailMan.vel[i], (o[i] - tailMan.prev[i]) * idt, .3); }
+  for (let j = k + 1; j < tail.length; j++) for (let c = 0; c < 2; c++) {
+    const i = j * 2 + c, tgt = o[k * 2 + c] * .8;
+    tailMan.vel[i] += ((tgt - o[i]) * 70 - tailMan.vel[i] * 9) * dt; o[i] += tailMan.vel[i] * dt;
+  }
+  for (let j = k + 1; j < tail.length; j++) limitTail(j);
+}
+function springTail(dt) {
+  const o = tailMan.off, v = tailMan.vel; let e = 0;
+  for (let j = 0; j < tail.length; j++) for (let c = 0; c < 2; c++) {
+    const i = j * 2 + c, kk = 42 - j * 1.8;
+    v[i] += (-o[i] * kk - v[i] * 5.2) * dt; o[i] += v[i] * dt; e += Math.abs(o[i]) + Math.abs(v[i]) * .1;
+  }
+  tail.forEach((s, j) => limitTail(j));
+  if (e < .004) { tailMan.mode = 'idle'; o.fill(0); v.fill(0); tail.forEach((s, j) => limitTail(j)); }
+}
+function springArr(v, vel, k, c, dt) { let e = 0; for (let i = 0; i < v.length; i++) { vel[i] += (-v[i] * k - vel[i] * c) * dt; v[i] += vel[i] * dt; e += Math.abs(v[i]) + Math.abs(vel[i]) * .1; } return e; }
+
+// ============================================================ ASSEMBLY update: mounted / pulled / free / flying parts, snapping
+const SNAP_R = .15, SNAP_SHOW = .5, DETACH = .1, SNAP_PX = 46;
+const layerE = l => ease(clamp(explodeK * 1.6 - l * .3, 0, 1));
+const _sw = V(), _sq = new THREE.Quaternion(), _pq = new THREE.Quaternion();
+function socketWorld(s, outP, outQ) {
+  outP.copy(s.pos).addScaledVector(s.dir, s.dist * layerE(s.layer)); s.parent.localToWorld(outP);
+  if (outQ) { s.parent.getWorldQuaternion(outQ); outQ.multiply(s.quat); }
+}
+function updateParts(dt) {
+  for (const p of PARTS) {
+    p.shake = Math.max(0, p.shake - dt * 3);
+    if (p.state === 'mounted' || p.state === 'pull' || p.state === 'unpull') {
+      p.seat = Math.max(0, (p.seat || 0) - dt * 3.5);
+      if (p.state === 'unpull') { p.pull = damp(p.pull, 0, 18 - p.mass * 8, dt); if (p.pull < .0008) { p.pull = 0; p.state = 'mounted'; } }
+      const s = p.socket;
+      p.pg.position.copy(s.pos).addScaledVector(s.dir, s.dist * layerE(s.layer) + p.pull + Math.sin(T * 70) * .002 * p.shake - Math.sin(p.seat * Math.PI) * (.003 + p.mass * .004)); // seat: short press-in on mounting
+      p.pg.quaternion.copy(s.quat);
+    } else if (p.state === 'fly') {
+      socketWorld(p.target, _sw, _sq);
+      const k = 1 - Math.exp(-dt * (12 - p.mass * 5)); // heavy parts glide in slower
+      p.pg.position.lerp(_sw, k); p.pg.quaternion.slerp(_sq, k);
+      if (p.pg.position.distanceTo(_sw) < .002 && p.pg.quaternion.angleTo(_sq) < .01) mountTo(p, p.target);
+    } else if (p.state === 'free' && p.drift) {
+      p.pg.position.lerp(p.drift, 1 - Math.exp(-dt * 7));
+      if (p.pg.position.distanceTo(p.drift) < .002) p.drift = null;
+    }
+    if (p.state !== 'free') p.drift = null;
+  }
+  snapInfo = null;
+  if (!grabbed) return;
+  if (grabbed.kind === 'part') {
+    const p = grabbed.part;
+    if (p.state === 'pull' && rayOnPlane(_a)) {
+      const proj = _a.sub(grabCtx.w0).length(); // drag away in any screen direction; the part slides out along its mount normal
+      // detach resistance grows with mass: a heavy plate needs a longer pull and gives less before it lets go
+      if (proj > DETACH * (.75 + p.mass * .6)) detach(p); else p.pull = Math.max(0, proj) * (.55 - p.mass * .22);
+    }
+    if (p.state === 'drag' && rayOnPlane(_a)) {
+      if (grabCtx.catchUp) grabCtx.off.multiplyScalar(Math.exp(-dt * 5));
+      const tgt = _a.add(grabCtx.off);
+      // sockets are found in screen space (the drag plane has a fixed depth), then the magnet pulls in 3D
+      _c.copy(tgt).project(camera); const cx = (_c.x * .5 + .5) * innerWidth, cy = (-_c.y * .5 + .5) * innerHeight;
+      let best = null, bpx = 1e9, bd = 0, near = null, npx = 1e9, front = 1e9;
+      const cands = [];
+      for (const s of SOCKETS) {
+        socketWorld(s, _sw); const d3 = _sw.distanceTo(tgt);
+        if (d3 > 2.2) continue;
+        _c.copy(_sw).project(camera); const dpx = Math.hypot((_c.x * .5 + .5) * innerWidth - cx, (-_c.y * .5 + .5) * innerHeight - cy);
+        if (dpx > SNAP_PX * 3) continue;
+        const cd = _sw.distanceTo(camera.position); cands.push([s, dpx, cd, d3]); if (dpx < SNAP_PX * 1.2) front = Math.min(front, cd);
+      }
+      // mounts that overlap on screen: the one nearest the viewer wins, so a socket hidden behind another never steals the drop
+      for (const [s, dpx, cd, d3] of cands) {
+        const hidden = Math.max(0, cd - front - .03) * 320;
+        if (s.type === p.type && (!s.occupant || s.occupant === p)) { const sc = dpx + hidden; if (sc < bpx) { bpx = sc; best = s; bd = d3; } }
+        else { const sc = (s.type === p.type ? dpx * .6 : dpx) + hidden; if (sc < npx) { npx = sc; near = s; } } // an occupied mount of the right type explains itself before a neighbour's
+      }
+      if (best && near && npx < SNAP_PX * .7 && npx + 12 < bpx) best = null; // something else sits right under the part
+      if (best && bpx < SNAP_PX * 3) {
+        socketWorld(best, _sw, _sq);
+        const align = p.pg.quaternion.angleTo(_sq);
+        snapInfo = { s: best, d: bd, px: bpx, ok: true, align, ready: false }; // compatible mounts self-orient: the magnet and the seating flight rotate the part
+        if (bpx < SNAP_PX && snapInfo.ok) {
+          const att = 1 - bpx / SNAP_PX;
+          tgt.lerp(_sw, .35 + att * .45);
+          p.pg.quaternion.slerp(_sq, .08 + att * .22);
+          snapInfo.ready = bpx < SNAP_PX * .75;
+        }
+      }
+      if ((!snapInfo || bpx > SNAP_PX) && near && npx < SNAP_PX * .7) snapInfo = { s: near, d: 0, px: npx, ok: false, wrong: near.type !== p.type, occupied: near.type === p.type, ready: false };
+      p.pg.position.lerp(tgt, 1 - Math.exp(-dt * (26 - p.mass * 13))); // small sensors track the hand, armour lags a little
+    }
+  } else if (grabbed.kind === 'rot') {
+    const p = grabbed.part, dx = pxX - grabCtx.lx, dy = pxY - grabCtx.ly; grabCtx.lx = pxX; grabCtx.ly = pxY;
+    _a.set(0, 1, 0).applyQuaternion(camera.quaternion); _b.set(1, 0, 0).applyQuaternion(camera.quaternion);
+    p.pg.quaternion.premultiply(_qa.setFromAxisAngle(_a, dx * .012)).premultiply(_qb.setFromAxisAngle(_b, dy * .012));
+  } else if (grabbed.kind === 'hatch') {
+    grabbed.hatch.open = clamp(grabCtx.open0 - (pxY - grabCtx.sy) * .005 + Math.abs(pxX - grabCtx.sx) * .001, 0, 1);
+  }
+}
+// socket rings (billboards) and detach tethers
+const ringGeoS = new THREE.RingGeometry(.9, 1, 64), ringGeoT = new THREE.RingGeometry(.62, .66, 48, 1, 0, Math.PI * 1.5);
+function socketRing(s) {
+  if (!s.ring) {
+    const mat = () => new THREE.MeshBasicMaterial({ color: new THREE.Color(.72, .9, 1).multiplyScalar(1.3), transparent: true, opacity: 0, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending });
+    const g = new THREE.Group(); const a = new THREE.Mesh(ringGeoS, mat()), b = new THREE.Mesh(ringGeoT, mat());
+    a.renderOrder = b.renderOrder = 20; g.add(a, b); scene.add(g); s.ring = { g, a, b, amt: 0 };
+  }
+  return s.ring;
+}
+const tetherGeo = new THREE.BufferGeometry(); tetherGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 2 * 16), 3));
+const tethers = new THREE.LineSegments(tetherGeo, new THREE.LineBasicMaterial({ color: 0x9fd4ff, transparent: true, opacity: .4, depthTest: false }));
+tethers.renderOrder = 20; tethers.frustumCulled = false; scene.add(tethers);
+function updateSocketFx(dt) {
+  const dragging = grabbed && grabbed.kind === 'part' && grabbed.part.state === 'drag' ? grabbed.part : null;
+  for (const s of SOCKETS) {
+    s.flash = Math.max(0, s.flash - dt * 2.2);
+    let want = 0, ready = false;
+    if (dragging && s.type === dragging.type && (!s.occupant || s.occupant === dragging)) {
+      socketWorld(s, _sw); const d = _sw.distanceTo(dragging.pg.position);
+      want = clamp(1 - d / (SNAP_SHOW * 1.6), .15, 1); ready = !!(snapInfo && snapInfo.s === s && snapInfo.ready);
+    }
+    if (!s.ring && want === 0 && s.flash === 0) continue;
+    const r = socketRing(s);
+    r.amt = damp(r.amt, want + s.flash, 10, dt);
+    if (r.amt < .005 && !want) { r.g.visible = false; continue; }
+    r.g.visible = true;
+    socketWorld(s, r.g.position); r.g.quaternion.copy(camera.quaternion);
+    const pulse = 1 + .08 * Math.sin(T * 6) + (ready ? .18 : 0) - s.flash * .35;
+    r.g.scale.setScalar(Math.max(.035, s.r * .55) * pulse);
+    r.a.material.opacity = r.amt * (ready ? .9 : .45);
+    r.b.material.opacity = r.amt * (ready ? .8 : .18); r.b.rotation.z = T * (ready ? 4 : 1.2);
+  }
+  const arr = tetherGeo.attributes.position.array; let n = 0;
+  for (const p of PARTS) {
+    if (!isFree(p) || n >= 16) continue;
+    socketWorld(p.home, _sw); if (_sw.distanceTo(p.pg.position) > .9) continue;
+    arr.set([p.pg.position.x, p.pg.position.y, p.pg.position.z, _sw.x, _sw.y, _sw.z], n * 6); n++;
+  }
+  tetherGeo.setDrawRange(0, n * 2); tetherGeo.attributes.position.needsUpdate = true;
+}
+
+const _g1 = V(), _g2 = V(), _g3 = V(), _lp = V();
+const sec2 = { px: 0, py: BODY_Y, pz: 0, yaw: 0, pit: 0, ty: 0, tyv: 0, tz: 0, tzv: 0, hy: 0, hyv: 0, hp: 0, hpv: 0 };
+function update(dt) {
+  T += dt; const t = T;
+  FX.uTime.value = t; grade.uniforms.uTime.value = t;
+  secS = damp(secS, scrollP * 5, 3.2, dt);
+  const w = k => ease(clamp(1 - Math.abs(secS - k) * 1.25, 0, 1));
+  const wHead = w(1), wLimb = w(2), wCore = w(3), wTail = w(4);
+  setSection(clamp(Math.round(secS), 0, 5));
+  stepPose(dt);
+  explodeK = clamp(explodeK + (explodeOn ? 1 : -1) * dt / 2.2, 0, 1);
+
+  // ---- boot / reveal
+  const boot = ease(clamp((t - 1.9) / 2.4, 0, 1));
+  const crouch = 1 - boot;
+  const eyesOn = t < 2.3 ? 0 : t < 2.9 ? (Math.sin(t * 60) > .2 ? 1 : .15) : 1;
+  const lightIn = k => ease(clamp((t - k) / 1.6, 0, 1));
+  renderer.toneMappingExposure = lerp(0, 1.0, lightIn(0));
+  rimA.intensity = 58 * lightIn(.2); rimB.intensity = 40 * lightIn(.5); kick.intensity = 26 * lightIn(.9);
+  key.intensity = 118 * lightIn(1.1); topL.intensity = 9 * lightIn(1.6);
+  hemi.intensity = .3 * lightIn(.6);
+  const ringOn = lightIn(.7);
+  em.strip.emissiveIntensity = 2.6 * lightIn(2.6) * (.92 + .08 * Math.sin(t * 1.3));
+  topMat.uniforms.uRing.value = ringOn; floorMat.uniforms.uRing.value = ringOn;
+  under.intensity = 1.6 * ringOn;
+  calib.material.opacity = .32 * ringOn; calib.rotation.z = t * .012;
+  eyeFlash = Math.max(0, eyeFlash - dt * 1.6);
+  em.cold.emissiveIntensity = 3.2 * lightIn(1.4) * (Math.sin(t * 2.1) > -.8 ? 1 : .2) * (1 + eyeFlash * 1.5 * (Math.sin(t * 40) > 0 ? 1 : .3));
+  coneMat.uniforms.uAmt.value = lightIn(1.1); dust.material.uniforms.uAmt.value = lightIn(.8);
+
+  // ---- chassis manipulation: height / pitch / roll / yaw / shift; the legs re-solve underneath
+  if (bodyMan.mode === 'grab' && rayOnPlane(_g1)) {
+    const Dd = _g1.sub(bodyMan.w0), fx = bodyMan.fx, s0 = bodyMan.s0;
+    const tv = [clamp(s0[0] + Dd.y * (1 - .6 * Math.abs(fx)), -.22, .1), clamp(s0[1] + Dd.y * fx * .55, -.22, .22), clamp(s0[2] + Dd.z * 1.3 * (1 - .5 * Math.abs(fx)), -.2, .2), clamp(s0[3] - Dd.z * fx * 1.1, -.28, .28), clamp(s0[4] + Dd.x * .5, -.08, .08)];
+    for (let i = 0; i < 5; i++) { const nv = damp(bodyMan.v[i], tv[i], 7.5, dt); /* chassis: heavy, damped follow */ bodyMan.vel[i] = lerp(bodyMan.vel[i], (nv - bodyMan.v[i]) / Math.max(dt, 1e-3), .3); bodyMan.v[i] = nv; }
+  } else if (bodyMan.mode === 'return') { if (springArr(bodyMan.v, bodyMan.vel, 22, 8.4, dt) < .002) { bodyMan.mode = 'idle'; bodyMan.v.fill(0); bodyMan.vel.fill(0); } }
+  const bm = bodyMan.v;
+
+  // ---- body: breathing, weight transfer, spine flex, compensation for lifted legs
+  let manX = 0, manZ = 0, manLift = 0;
+  legs.forEach((L, i) => { const l = L.man.lift + Math.max(0, poseC[12 + i * 3]) * .6; manLift += l; manX -= Math.sign(L.home.x) * l * .09; manZ -= L.s * l * .15; });
+  const br = Math.sin(t * Math.PI * 2 / 4.3), br2 = Math.sin(t * Math.PI * 2 / 4.3 - 1.1);
+  const liftW = wLimb;
+  const wx = .02 * Math.sin(t * .61) + .008 * Math.sin(t * 1.37 + 1.2) - .05 * liftW + manX + pc('bx') + bm[4];
+  const wz = .026 * Math.sin(t * .43 + .5) - .055 * liftW + manZ;
+  body.position.set(wx, BODY_Y + pc('bh') + bm[0] - crouch * .36 + br * .005 - .012 * wLimb - manLift * .03, wz);
+  body.rotation.set(wz * .7 + pc('br') + bm[2], .025 * Math.sin(t * .29) + pc('by') + bm[3], -wx * .5 - crouch * .1 + .015 * wLimb + pc('bp') + bm[1]);
+  chestG.rotation.set(-wz * .25, -.018 * Math.sin(t * .5), .012 * br);
+  hipG.rotation.set(wz * .2, .03 * Math.sin(t * .5 + .4), -.01 * br);
+  creature.getWorldQuaternion(creatureQ);
+  // secondary motion: body velocities drive an underdamped tail lag and a small stabiliser residual on the head
+  if (dt > 1e-3) {
+    const bp = body.position, br_ = body.rotation, iv = 1 / dt, S = sec2;
+    const vx = (bp.x - S.px) * iv, vy = (bp.y - S.py) * iv, vz = (bp.z - S.pz) * iv, vyaw = (br_.y - S.yaw) * iv, vpit = (br_.z - S.pit) * iv;
+    S.ty += S.tyv * dt;
+    S.tyv += ((clamp(-vz * 1.6 - vyaw * .45, -.5, .5) - S.ty) * 34 - S.tyv * 3.6) * dt;
+    S.tz += S.tzv * dt; S.tzv += ((clamp(vy * 1.8 + vx * .3, -.5, .5) - S.tz) * 30 - S.tzv * 3.4) * dt;
+    S.hy += S.hyv * dt; S.hyv += ((clamp(vyaw * .06, -.03, .03) - S.hy) * 90 - S.hyv * 11) * dt;
+    S.hp += S.hpv * dt; S.hpv += ((clamp(vpit * .06 - vy * .08, -.03, .03) - S.hp) * 90 - S.hpv * 11) * dt;
+    S.px = bp.x; S.py = bp.y; S.pz = bp.z; S.yaw = br_.y; S.pit = br_.z;
+  }
+
+  // ---- head: idle look targets / cursor tracking / manual grab / spring return (totals include the pose base)
+  look.next -= dt;
+  if (look.next <= 0 && headMan.mode === 'idle') {
+    look.next = 1.6 + rnd() * 3.2;
+    if (wHead > .5 && rnd() < .6) {
+      const hp = head.getWorldPosition(_v1), cp = camera.position;
+      look.tYaw = clamp(Math.atan2(-(cp.z - hp.z), cp.x - hp.x) - pc('hy'), -.7, .7); look.tPitch = clamp((cp.y - hp.y) * .3, -.2, .25);
+    } else { look.tYaw = (rnd() - .5) * .9; look.tPitch = (rnd() - .6) * .34; }
+    if (crouch > .5) { look.tYaw *= .2; look.tPitch = -.3; }
+  }
+  let tracking = false;
+  if (hasPointer && !grabbed && !camDrag && !hover && t > 5 && headMan.mode === 'idle') {
+    head.getWorldPosition(_hv2); raycaster.setFromCamera(pointer, camera); raycaster.ray.closestPointToPoint(_hv2, _g1);
+    const dxw = _g1.x - _hv2.x, dyw = _g1.y - _hv2.y, dzw = _g1.z - _hv2.z;
+    if (Math.hypot(dxw, dyw, dzw) < .8 && dxw > .02) { tracking = true; trackYaw = clamp(Math.atan2(-dzw, dxw) - pc('hy'), -.6, .6); trackPitch = clamp(Math.atan2(dyw, Math.hypot(dxw, dzw)) - pc('hp'), -.3, .3); }
+  }
+  trackW = damp(trackW, tracking ? 1 : 0, 3, dt);
+  const prevYaw = look.yaw;
+  if (headMan.mode === 'grab') { solveHeadGrab(dt); look.yaw = headMan.yaw - pc('hy'); look.pitch = headMan.pitch - pc('hp'); }
+  else if (headMan.mode === 'return') {
+    const ty = look.tYaw, tp = look.tPitch - crouch * .25;
+    headMan.vy += (-(look.yaw - ty) * 30 - headMan.vy * 7.2) * dt; headMan.vp += (-(look.pitch - tp) * 30 - headMan.vp * 7.2) * dt;
+    look.yaw += headMan.vy * dt; look.pitch += headMan.vp * dt;
+    if (Math.abs(look.yaw - ty) + Math.abs(look.pitch - tp) < .01 && Math.abs(headMan.vy) + Math.abs(headMan.vp) < .05) { headMan.mode = 'idle'; look.next = 1.2 + rnd(); }
+  } else {
+    look.yaw = damp(look.yaw, lerp(look.tYaw, trackYaw, trackW * .3), 2.4, dt);
+    look.pitch = damp(look.pitch, lerp(look.tPitch, trackPitch, trackW * .3) - crouch * .25, 2.4, dt);
+  }
+  const yawT = clamp(look.yaw + pc('hy'), -HEAD_YAW, HEAD_YAW), pitchT = clamp(look.pitch + pc('hp'), HEAD_PMIN - .3, HEAD_PMAX);
+  const eyeTY = headMan.mode === 'grab' ? look.yaw : lerp(look.tYaw, trackYaw, trackW);
+  const eyeTP = headMan.mode === 'grab' ? look.pitch : lerp(look.tPitch, trackPitch, trackW);
+  look.eyeYaw = damp(look.eyeYaw, eyeTY, 16, dt); look.eyePitch = damp(look.eyePitch, eyeTP, 16, dt);
+  const yawVel = (look.yaw - prevYaw) / Math.max(dt, 1e-3);
+  // neck shares the turn -> collar ring, neck rams, cables and gorgets follow the head
+  n1.rotation.set(0, yawT * .28, .8 + pitchT * .38 + pc('hp') * .35 - crouch * .5);
+  n2.rotation.set(0, yawT * .32, -.45 + pitchT * .34);
+  neckRing.rotation.x = yawT * 2.4;
+  jawNext -= dt; if (jawNext < 0) { jawNext = 7 + rnd() * 8; jawT = 1.4; }
+  jawT = Math.max(0, jawT - dt);
+  jawOpen = damp(jawOpen, jawT > 0 ? .16 : headMan.mode === 'grab' ? .05 : 0, 5, dt);
+  if (jawMan.mode === 'grab') { const no = clamp(jawMan.o0 + (pxY - grabCtx.sy) * .004, 0, .38); jawMan.v = (no - jawMan.open) / Math.max(dt, 1e-3); jawMan.open = no; }
+  else if (jawMan.mode === 'return') { jawMan.v += (-jawMan.open * 60 - jawMan.v * 8) * dt; jawMan.open = Math.max(0, jawMan.open + jawMan.v * dt); if (jawMan.open < .002 && Math.abs(jawMan.v) < .05) { jawMan.mode = 'idle'; jawMan.open = 0; } }
+  jaw.rotation.z = -.02 - Math.max(jawOpen, jawMan.open);
+
+  creature.updateMatrixWorld(true);
+
+  // ---- legs: pose base + idle steps + forelimb demo + direct manipulation
+  stepNext -= dt;
+  if (stepNext < 0 && boot >= 1) {
+    stepNext = 5 + rnd() * 5;
+    const cand = [0, 1, 2, 3].filter(i => !(i === 0 && liftW > .05) && legs[i].man.mode === 'idle' && poseT[12 + i * 3] < .01);
+    if (cand.length) { const L = legs[cand[(stepLeg++) % cand.length]]; L.stepFrom.copy(L.off); L.stepTo.set((rnd() - .5) * .06, 0, (rnd() - .5) * .04); L.stepT = 0; }
+  }
+  legs.forEach((L, i) => {
+    const m = L.man;
+    let lift = 0;
+    if (L.stepT < 1) { L.stepT = Math.min(1, L.stepT + dt / .75); L.off.lerpVectors(L.stepFrom, L.stepTo, ease(L.stepT)); lift = Math.sin(Math.PI * L.stepT) * .045; }
+    const tgt = _v3.copy(L.home).add(L.off).add(legPose(i, _lp));
+    if (i === 0 && liftW > 0) {
+      const ph = t * 1.9, c = .5 - .5 * Math.cos(ph);
+      tgt.x += liftW * (.05 + .1 * Math.sin(ph - .6) * c); tgt.y += liftW * (.06 + .2 * c); tgt.z += liftW * .02;
+      lift = Math.max(lift, liftW * (.3 + .7 * c) * .25);
+    }
+    tgt.y += lift;
+    if (m.mode === 'grab') {
+      if (rayOnPlane(_g1)) {
+        const d = _g1.sub(m.offset).sub(L.home);
+        // limits widen around the current pose so grabbing an extended limb never yanks it back
+        d.x = clamp(d.x, Math.min(L.front ? -.16 : -.3, _lp.x - .12), Math.max(L.front ? .32 : .12, _lp.x + .12));
+        d.y = clamp(d.y, 0, Math.max(L.front ? .46 : .36, _lp.y + .1));
+        d.z = clamp(d.z * L.s, -.05, .1) * L.s;
+        const nd = _g2.copy(L.home).add(d).sub(tgt);
+        _g3.copy(m.delta); m.delta.lerp(nd, 1 - Math.exp(-dt * 16));
+        m.vel.lerp(_g3.subVectors(m.delta, _g3).divideScalar(Math.max(dt, 1e-3)), .35);
+      }
+    } else if (m.mode === 'return') {
+      m.vel.addScaledVector(m.delta, -34 * dt).addScaledVector(m.vel, -7.4 * dt);
+      m.delta.addScaledVector(m.vel, dt);
+      if (tgt.y + m.delta.y < PAW_Y) { m.delta.y = PAW_Y - tgt.y; m.vel.y = Math.max(0, m.vel.y); }
+      if (m.delta.length() < .002 && m.vel.length() < .03) { m.mode = 'idle'; m.delta.set(0, 0, 0); m.vel.set(0, 0, 0); }
+    }
+    if (m.mode !== 'idle') tgt.add(m.delta);
+    tgt.y = Math.max(tgt.y, PAW_Y);
+    // a pose that pitches the paw toes-down stands it on its claws instead of sinking them into the deck
+    const pt = ikC[i * 3 + 1]; if (pt > 0) tgt.y = Math.max(tgt.y, PAW_Y + Math.sin(pt) * .145);
+    m.lift = m.mode === 'idle' ? 0 : Math.max(0, m.delta.y);
+    L.lift = tgt.y - PAW_Y;
+    L.tilt = clamp(L.lift * 2.2, 0, .8) * (1 - clamp(ikC[i * 3], 0, 1)) + ikC[i * 3 + 1];
+    m.cur.copy(tgt);
+    const bx = tgt.x, bz = tgt.z;
+    solveLeg(L, tgt);
+    L.toes.forEach((tg, k) => { tg.rotation.z = -Math.min(.5, L.lift * 3.2) * (1 + k * .05) + .05 * Math.sin(t * 1.3 + k); });
+    pawBlobs[i].position.set(bx + .04, G + .002, bz);
+    // contact shadow: tight and dark while planted, spreads and fades as the paw leaves the deck
+    pawBlobs[i].scale.setScalar(.8 + L.lift * 4);
+    pawBlobs[i].material.opacity = .95 * Math.exp(-L.lift * 11);
+  });
+  bodyBlob.position.set(wx, G + .002, wz);
+  { const low = clamp((BODY_Y - body.position.y) / .36, -.3, 1); bodyBlob.material.opacity = clamp(.72 + low * .26, .5, .98); bodyBlob.scale.set(1 - low * .12, 1, 1 - low * .06); }
+
+  // ---- head stabilisation: world orientation held steady against body motion
+  n2.updateMatrixWorld(true);
+  n2.getWorldQuaternion(_q).invert();
+  wantE.set(.03 * Math.sin(t * .7) - yawT * .15, yawT + sec2.hy, pitchT - crouch * .35 + sec2.hp);
+  want.setFromEuler(wantE);
+  head.quaternion.copy(_q.multiply(want));
+
+  // ---- optics
+  apNext -= dt; if (apNext < 0) { apNext = 1.2 + rnd() * 2.6; apertureT = wHead > .5 || tracking ? .25 + rnd() * .75 : .5 + rnd() * .5; }
+  aperture = damp(aperture, apertureT, 6, dt);
+  optics.forEach((o, k) => {
+    o.ball.rotation.set(-(look.eyePitch - look.pitch) * .6 + .02 * Math.sin(t * 3.1 + k), (look.eyeYaw - look.yaw) * .9, 0);
+    o.blades.forEach(b => { b.rotation.z = lerp(-.3, -1.25, aperture); });
+    o.pupil.scale.setScalar(.55 + .5 * aperture);
+    o.focus.rotation.z = aperture * 2.4 + t * .05;
+  });
+  em.eye.emissiveIntensity = eyesOn * (4.2 + 1.6 * (1 - aperture)) * (1 + eyeFlash * .9);
+  eyeLight.intensity = eyesOn * .45 * (1 + eyeFlash);
+
+  // ---- ears
+  ears.forEach((e, k) => {
+    const st = earState[k]; st.n -= dt;
+    if (st.n < 0) { st.n = 1.5 + rnd() * 4; st.ty = (rnd() - .5) * .5; st.tz = rnd() < .3 ? -.35 : (rnd() - .5) * .15; }
+    const iy = st.ty - yawVel * .25 * e.s, iz = st.tz + crouch * -.5 + pc('ear'); st.iz = iz;
+    if (st.mode === 'grab') {
+      const ny = clamp(grabCtx.ey - (pxX - grabCtx.sx) * .006 * e.s, -.6, .6), nz = clamp(grabCtx.ez - (pxY - grabCtx.sy) * .007, -.75, .45);
+      st.vy = (ny - st.y) / Math.max(dt, 1e-3); st.vz = (nz - st.z) / Math.max(dt, 1e-3); st.y = ny; st.z = nz;
+    } else if (st.mode === 'return') {
+      st.vy += (-(st.y - iy) * 70 - st.vy * 8) * dt; st.vz += (-(st.z - iz) * 70 - st.vz * 8) * dt;
+      st.y += st.vy * dt; st.z += st.vz * dt;
+      if (Math.abs(st.y - iy) + Math.abs(st.z - iz) < .01 && Math.abs(st.vy) + Math.abs(st.vz) < .05) st.mode = 'idle';
+    } else { st.y = damp(st.y, iy, 7, dt); st.z = damp(st.z, iz, 7, dt); }
+    e.piv.rotation.set(0, st.y, st.z);
+  });
+
+  // ---- core: gimbals + meshing gears + light
+  coreRate = damp(coreRate, boot * (1.4 + 4.5 * wCore), 1.2, dt);
+  coreSpin += coreRate * dt;
+  gimbalA.rotation.set(0, coreSpin, 0); gimbalB.rotation.set(coreSpin * -1.6, 0, 0);
+  coreBall.rotation.y = coreSpin * .3;
+  gears.forEach(g => g.m.rotation.z = coreSpin * g.r * .6);
+  spinners.forEach(s => { s.m.rotation.y += s.r * dt * boot; });
+  const coreOn = lightIn(2.9);
+  em.core.emissiveIntensity = coreOn * (3.6 + .8 * Math.sin(t * 3.1) + 2.2 * wCore + (Math.sin(t * 17) > .96 ? .6 : 0));
+  coreLight.intensity = coreOn * (.4 + .7 * wCore);
+  hatches.forEach(h => {
+    h.openS = damp(h.openS, h.open, 7, dt);
+    h.angle = Math.max(.62 * ease(wCore), 1.3 * h.openS, 1.3 * layerE(0));
+    h.hinge.rotation.x = -h.s * h.angle; h.hinge.position.y = .27 + .03 * Math.min(1, h.angle / .62);
+  });
+  ribs.forEach(r => { const b = .004 * (1 + Math.sin(t * Math.PI * 2 / 4.3 - r.k * .5)); r.g.position.z = r.s * (b + .014 * wCore); r.g.position.y = -.004 * wCore; });
+
+  // ---- thermal vents
+  const vc = (t + 6) % 16.7;
+  const ventWant = Math.max(vc < 3.8 ? 1 : 0, wTail * .9, temp > 47 ? 1 : 0) * boot;
+  ventOpen = damp(ventOpen, ventWant, 2.2, dt);
+  const heat = .6 + servoLoad * 1.8 + wCore * .8 + liftW;
+  temp += (heat * .32 - (temp - 32) * (.03 + ventOpen * .12)) * dt;
+  fanRot += dt * (2 + ventOpen * 38);
+  vents.forEach(v => { v.fan.rotation.z = fanRot * v.s; v.slats.forEach((s, i) => { s.rotation.x = -ventOpen * (1.05 - i * .04); }); });
+  em.vent.emissiveIntensity = boot * (.3 + ventOpen * 3.6) * (.85 + .15 * Math.sin(t * 9));
+
+  // ---- tail: pose base + idle waves + manual offsets
+  const tailAmp = 1 + wTail * 1.4, te = layerE(1);
+  tail.forEach(s => {
+    const i = s.i, lag = i * .42;
+    if (i > 0) s.g.position.x = -tail[i - 1].Ls - te * .035;
+    s.bZ = sec2.tz * (i === 0 ? .6 : .12) + (i === 0 ? pc('t0') : pc('tc')) + crouch * (i === 0 ? .4 : .02) + .03 * tailAmp * Math.sin(t * .8 - lag) + (i === 0 ? wz * 2 : 0) + poseC[24 + i * 2];
+    s.bY = (.035 + .012 * i) * tailAmp * Math.sin(t * .93 - lag) + .02 * Math.sin(t * .23 - lag * .5) - (i < 3 ? wz * 1.2 : 0) + pc('tw') * (.4 + i / 11) * .12 + poseC[23 + i * 2] + sec2.ty * (.35 + i * .06);
+    limitTail(i);
+  });
+  if (tailMan.mode === 'grab') { hipG.updateMatrixWorld(true); solveTail(dt); }
+  else if (tailMan.mode === 'return') springTail(dt);
+  em.tail.emissiveIntensity = 3 * lightIn(3.2) * (.7 + .3 * Math.sin(t * 2.4));
+
+  // ---- scanner
+  const sc = t < 7 ? (t - 3.4) / 2.8 : ((t - 7) % 13.3) / 2.8;
+  if (sc > 0 && sc < 1) { FX.uScanX.value = lerp(2.0, -2.1, ease(sc)); FX.uScanAmt.value = Math.sin(Math.PI * sc) * boot * (1 - explodeK); } else FX.uScanAmt.value = 0;
+  scanSheet.position.x = FX.uScanX.value; scanSheet.visible = FX.uScanAmt.value > .001;
+
+  updateParts(dt);
+  creature.updateMatrixWorld(true);
+
+  // ---- world-space mechanics: rams / cables / bellows re-solved from their anchors
+  pistons.forEach(p => p.update());
+  cables.forEach(c => c.update(Math.min(dt, 1 / 30)));
+  bellows.forEach(b => b.update());
+  spineA.getWorldPosition(sA); spineB.getWorldPosition(sB); spineC.getWorldPosition(sC);
+  sC.y += .015 * br2;
+  vertebrae.forEach((m, i) => { const u = (i + .5) / vertebrae.length; bez(sA, sC, sB, u, m.position); bez(sA, sC, sB, Math.min(1, u + .02), _v1); m.lookAt(_v1); });
+  updateSocketFx(dt);
+
+  servoLoad = .26 + Math.abs(wz) * 3.5 + Math.abs(wx) * 2.5 + liftW * .34 + crouch * .3 + legs.reduce((a, l) => a + l.lift, 0) * 1.5 + Math.max(0, -pc('bh') - bm[0]) * .8 + (headMan.mode === 'grab' ? .12 : 0);
+}
+
+// ============================================================ CAMERA
+const tmpT = V(), tmpT2 = V();
+// critically damped spring (starts from rest, eases in and out, never overshoots) — an operator's camera move instead of an exponential snap
+const camV = { az: 0, el: 0, d: 0, fov: 0, x: 0, y: 0, z: 0, off: 0 };
+function spring(cur, goal, k, st, dt) {
+  const w = 2 / st, x = w * dt, e = 1 / (1 + x + .48 * x * x + .235 * x * x * x), c = cur - goal, tmp = (camV[k] + w * c) * dt;
+  camV[k] = (camV[k] - w * tmp) * e; return goal + (c + tmp) * e;
+}
+let camOff = 0;
+function updateCamera(dt) {
+  const s = clamp(secS, 0, 5), i = Math.min(4, Math.floor(s)), f = s - i;
+  const e = ease(clamp((f - .12) / .76, 0, 1));
+  const A = SHOTS[i], B = SHOTS[i + 1];
+  shotTarget(A, tmpT); shotTarget(B, tmpT2);
+  let az = lerp(A.az, B.az, e), el = lerp(A.el, B.el, e), d = lerp(A.d, B.d, e), fov = lerp(A.fov, B.fov, e);
+  let tg = tmpT.lerp(tmpT2, e);
+  if (focus) {
+    // double-click focus: target = selected component; orbit and zoom stay live
+    tg = focus.obj.getWorldPosition(tmpT);
+    zoomF = damp(zoomF, zoomFT, 8, dt);
+    az = focus.az; el = focus.el; fov = 30;
+    d = clamp(focus.d * zoomF, Math.max(.16, focus.desc.size * 1.25), 6);
+  } else { zoomG = damp(zoomG, zoomGT, 8, dt); d = clamp(d * (1 + .2 * explodeK) * zoomG, 1.1, 18); tg.y += .12 * ease(explodeK); } // exploded: frame the lifted stack
+  const intro = ease(clamp((T - .2) / 5.2, 0, 1));
+  az = lerp(102, az, intro); el = lerp(-2, el, intro); d = lerp(10.5, d, intro); fov = lerp(24, fov, intro);
+  const asp = camera.aspect; if (asp < 1.3 && !focus) d *= Math.pow(1.3 / asp, .85);
+  if (!camDrag) {
+    if (!grabbed) idleOrbit += dt;
+    orbAz += orbVAz; orbEl += orbVEl; orbVAz *= Math.pow(.02, dt); orbVEl *= Math.pow(.02, dt);
+    if (idleOrbit > 5 && !focus && mode === 'inspect' && !explodeOn) { orbAz = damp(orbAz, 0, .35, dt); orbEl = damp(orbEl, 0, .35, dt); }
+  } else { orbAz += orbVAz * .5; orbEl += orbVEl * .5; orbVAz *= .5; orbVEl *= .5; }
+  orbEl = clamp(orbEl, -.12, .6 + .35 * clamp((zoomG - 1) / 2, 0, 1));
+  if (!grabbed) { pointerS.x = damp(pointerS.x, hasPointer ? pointer.x : 0, 1.6, dt); pointerS.y = damp(pointerS.y, hasPointer ? pointer.y : 0, 1.6, dt); }
+  const still = grabbed || focus ? 0 : 1;
+  const drift = (.5 * Math.sin(T * .31) + .3 * Math.sin(T * .77 + 1)) * still;
+  const goalAz = az * D + orbAz - pointerS.x * .05 * still + drift * .006;
+  const goalEl = el * D + orbEl + pointerS.y * .03 * still + .003 * Math.sin(T * .43) * still;
+  // smooth times: hand orbit stays tight, focus flights are a touch longer, a grab keeps the frame calm
+  const stA = camDrag ? .09 : grabbed ? .7 : focus ? .42 : .36, stT = grabbed ? .7 : focus ? .46 : .4;
+  camS.az = spring(camS.az, goalAz, 'az', stA, dt); camS.el = spring(camS.el, goalEl, 'el', stA, dt);
+  camS.d = spring(camS.d, d, 'd', focus ? .5 : .34, dt); camS.fov = spring(camS.fov, fov, 'fov', .45, dt);
+  const freezeTarget = grabbed && (focus || A.t === 'head' || B.t === 'head');
+  if (!freezeTarget) { camS.t.x = spring(camS.t.x, tg.x, 'x', stT, dt); camS.t.y = spring(camS.t.y, tg.y, 'y', stT, dt); camS.t.z = spring(camS.t.z, tg.z, 'z', stT, dt); }
+  else camV.x = camV.y = camV.z = 0;
+  // focus composition: shift the frame so the component sits clear of the card on the left
+  const offGoal = focus && innerWidth > 900 ? Math.min(.22, 380 / innerWidth) : 0;
+  camOff = spring(camOff, offGoal, 'off', .5, dt);
+  const ce = Math.cos(camS.el);
+  camera.position.set(camS.t.x + camS.d * Math.sin(camS.az) * ce, Math.max(G + .08, camS.t.y + camS.d * Math.sin(camS.el)), camS.t.z + camS.d * Math.cos(camS.az) * ce);
+  camera.lookAt(camS.t);
+  camera.rotateZ(drift * .002);
+  const fo = -camOff * camera.getFilmWidth() * Math.tan(camS.fov * D / 2) * camera.aspect; // NDC shift -> film offset
+  if (Math.abs(camera.fov - camS.fov) > 1e-3 || Math.abs(camera.filmOffset - fo) > 1e-4) { camera.fov = camS.fov; camera.filmOffset = fo; camera.updateProjectionMatrix(); }
+  scene.fog.density = .052 * clamp(6.5 / camS.d, .2, 1); // keep the machine readable when pulled far back
+}
+
+// ============================================================ HUD update
+const lead = { svg: $('lead'), l: $('ll'), c: $('lc'), d: $('ld'), brk: $('brk'), link: $('cardLink'), box: $('callout'), t: $('cot'), s: $('cod') };
+const hint = $('hint'), hintT = $('hintT'), hintS = $('hintS');
+const sgn = (v, digits = 0) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(digits);
+const HI_KIN = new THREE.Vector3(1, .52, .2), HI_REM = new THREE.Vector3(.55, .78, 1);
+function readout(z, active) {
+  if (z.kind === 'head') return active ? `yaw ${sgn(headMan.yaw / D)}° · pitch ${sgn(headMan.pitch / D)}°` : 'kinematic · grab to rotate';
+  if (z.kind === 'leg') { const L = z.leg; return active ? `lift ${Math.round(Math.max(0, L.lift) * 1000)} mm · reach ${sgn((L.man.cur.x - L.home.x) * 1000)} mm` : 'kinematic · lift and place'; }
+  if (z.kind === 'tail') { const o = tailMan.off; let s = 0; for (let j = 0; j <= tailMan.k; j++) s += Math.abs(o[j * 2]) + Math.abs(o[j * 2 + 1]); return active ? `seg ${tailMan.k + 1}/12 · Σ ${Math.round(s / D)}°` : 'kinematic · deflect chain'; }
+  if (z.kind === 'body') { const v = bodyMan.v; return active ? `height ${sgn((v[0] + pc('bh')) * 1000)} mm · pitch ${sgn((v[1] + pc('bp')) / D)}° · roll ${sgn((v[2] + pc('br')) / D)}°` : 'kinematic · drag to re-pose chassis'; }
+  if (z.kind === 'jaw') return active ? `open ${Math.round(jawMan.open / D)}°` : 'kinematic · drag down to open';
+  const st = earState[z.ear]; return active ? `swivel ${sgn(st.y / D)}° · fold ${sgn(st.z / D)}°` : 'kinematic · swivel';
+}
+function partText(p, active) {
+  if (lockMsg && lockMsg.part === p) return `locked · remove ${coverName(lockMsg.cover)} first`;
+  if (p.state === 'mounted' || p.state === 'unpull') { const bl = blockedBy(p); return bl ? `${p.cls} · locked by ${coverName(bl)}` : `${p.cls} · pull to detach`; }
+  if (p.state === 'pull') return `releasing · ${Math.min(99, Math.round(p.pull / (DETACH * (.75 + p.mass * .6) * (.55 - p.mass * .22)) * 100))}%`;
+  if (active && snapInfo) {
+    if (snapInfo.occupied) return `mount occupied · remove ${snapInfo.s.occupant ? snapInfo.s.occupant.name : 'part'} first`;
+    if (snapInfo.wrong) return `incompatible · ${typeLabel(p.type)} ≠ ${typeLabel(snapInfo.s.type)}`;
+    if (!snapInfo.ok) return 'rotate to align with mount';
+    return snapInfo.ready ? 'snap ready · release to mount' : `${typeLabel(p.type)} mount · ${Math.round(snapInfo.d * 1000)} mm`;
+  }
+  if (p.state === 'rot') return 'rotating';
+  return active ? 'detached · move to a mount' : 'detached · drag · rmb / shift rotate';
+}
+function boxOnScreen(lb, obj) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (let i = 0; i < 8; i++) {
+    _c.set(i & 1 ? lb.max.x : lb.min.x, i & 2 ? lb.max.y : lb.min.y, i & 4 ? lb.max.z : lb.min.z).applyMatrix4(obj.matrixWorld).project(camera);
+    const x = (_c.x * .5 + .5) * innerWidth, y = (-_c.y * .5 + .5) * innerHeight;
+    x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+  }
+  return [x0 - 6, y0 - 6, x1 + 6, y1 + 6];
+}
+function drawBracket(r) {
+  if (!r) { lead.brk.setAttribute('d', ''); return; }
+  const [x0, y0, x1, y1] = r, k = Math.min(12, (x1 - x0) / 3, (y1 - y0) / 3);
+  lead.brk.setAttribute('d', `M${x0},${y0 + k}V${y0}H${x0 + k}M${x1 - k},${y0}H${x1}V${y0 + k}M${x1},${y1 - k}V${y1}H${x1 - k}M${x0 + k},${y1}H${x0}V${y1 - k}`);
+}
+function updateHud(dt) {
+  hover = null; hoverZone = null;
+  if (hasPointer && !grabbed && !camDrag && T > 4.6) hover = pickAll();
+  if (hover && hover.kind === 'zone') hoverZone = hover.zone;
+  if (lockMsg) { lockMsg.t -= dt; if (lockMsg.t <= 0) lockMsg = null; }
+  const locked = hover && hover.kind === 'part' && hover.part.state === 'mounted' && blockedBy(hover.part);
+  document.body.classList.toggle('hot', !!hover && !grabbed && !locked);
+  document.body.classList.toggle('locked', !!locked && !grabbed);
+  const secIdx = clamp(Math.round(secS), 0, 5);
+  // what the HUD is describing right now
+  let cur = null;
+  if (grabbed) cur = grabbed.kind === 'part' || grabbed.kind === 'rot' ? { kind: 'part', part: grabbed.part } : grabbed.kind === 'hatch' ? { kind: 'hatch', hatch: grabbed.hatch } : { kind: 'zone', zone: grabbed };
+  else if (hover) cur = hover;
+  else if (lockMsg) cur = { kind: 'part', part: lockMsg.part };
+  const featured = cur ? null : (SECTION_CALLOUT[secIdx] !== null && Math.abs(secS - secIdx) < .3 && T > 5 && !focus && mode === 'inspect' ? HOT[SECTION_CALLOUT[secIdx]] : null);
+  let anchorPos = null, title = '', desc = '', rect = null, col = HI_KIN, rad = .3;
+  if (cur && cur.kind === 'zone') { anchorPos = cur.zone.center().clone(); title = cur.zone.name; desc = readout(cur.zone, !!grabbed); rad = cur.zone.r; }
+  else if (cur && cur.kind === 'part') { const p = cur.part; anchorPos = p.pg.getWorldPosition(V()); title = p.name; desc = partText(p, !!grabbed); rect = boxOnScreen(p.lb, p.pg); col = HI_REM; rad = p.size * 1.15; }
+  else if (cur && cur.kind === 'hatch') { const h = cur.hatch; anchorPos = h.inner.localToWorld(h.lb.getCenter(V())); title = h.name; desc = `serviceable · ${Math.round(h.open * 100)}% open · drag up`; rect = boxOnScreen(h.lb, h.inner); col = HI_REM; rad = .3; }
+  else if (featured) { anchorPos = featured.m.getWorldPosition(V()); title = featured.name; desc = featured.desc; }
+  let fRect = null;
+  if (!cur && focus && focus.desc) { const fd = focus.desc; fRect = rect = boxOnScreen(fd.lb, fd.lbObj); col = HI_REM; rad = fd.size * 1.15; FX.uHiPos.value.lerp(fd.obj.getWorldPosition(V()), 1 - Math.exp(-dt * 12)); }
+  const ftag = $('ftag');
+  if (fRect) { ftag.textContent = focus.desc.meta.id; ftag.style.transform = `translate(${fRect[0]}px, ${fRect[1] - 16}px)`; ftag.classList.add('on'); } else ftag.classList.remove('on');
+  hiAmt = damp(hiAmt, grabbed ? 1 : cur ? .6 : fRect ? .45 : featured ? .4 : 0, 8, dt);
+  FX.uHiAmt.value = hiAmt * (col === HI_REM ? .8 : 1);
+  FX.uHiCol.value.lerp(col, 1 - Math.exp(-dt * 12));
+  FX.uHiR.value = damp(FX.uHiR.value, rad, 10, dt);
+  drawBracket(rect);
+  lead.brk.style.opacity = rect ? 1 : 0;
+  // card leader: a dashed elbow from the card edge to the bracketed component
+  if (fRect && innerWidth > 900) {
+    const cr = cardEl.getBoundingClientRect(), x0 = cr.right - 14, y0 = cr.top + 36, x1 = fRect[0], y1 = clamp((fRect[1] + fRect[3]) / 2, fRect[1] + 8, fRect[3] - 8);
+    if (x1 > x0 + 24) { lead.link.setAttribute('d', `M${x0},${y0}H${x0 + Math.min(40, (x1 - x0) * .3)}L${x1},${y1}`); lead.link.classList.add('on'); } else lead.link.classList.remove('on');
+  } else lead.link.classList.remove('on');
+  lead.svg.style.opacity = anchorPos || rect ? 1 : 0;
+  for (const e of [lead.l, lead.c, lead.d]) e.style.visibility = anchorPos ? 'visible' : 'hidden';
+  if (anchorPos) {
+    FX.uHiPos.value.lerp(anchorPos, 1 - Math.exp(-dt * (grabbed ? 30 : 12)));
+    const p = anchorPos.project(camera);
+    const x = (p.x * .5 + .5) * innerWidth, y = (-p.y * .5 + .5) * innerHeight;
+    const right = x < innerWidth * .62;
+    const lx = x + (right ? 90 : -90), ly = y - 70;
+    lead.l.setAttribute('x1', x); lead.l.setAttribute('y1', y); lead.l.setAttribute('x2', lx); lead.l.setAttribute('y2', ly);
+    lead.c.setAttribute('cx', x); lead.c.setAttribute('cy', y); lead.d.setAttribute('cx', x); lead.d.setAttribute('cy', y);
+    lead.c.setAttribute('r', grabbed ? 10 : 7);
+    lead.svg.classList.toggle('cool', col === HI_REM);
+    lead.box.classList.toggle('cool', col === HI_REM);
+    lead.box.style.transform = `translate(${right ? lx + 6 : lx - 256}px, ${ly - 22}px)`;
+    lead.t.textContent = title; lead.s.textContent = desc;
+    lead.box.classList.add('on');
+  } else lead.box.classList.remove('on');
+
+  // contextual hint
+  const aHint = mode === 'assembly' && T - assemblyHintT < 6;
+  if (aHint) { hintT.textContent = 'Assembly // pull · rotate · remount'; hintS.textContent = 'Drag a panel off its mount · RMB or Shift-drag rotates · bring it back to snap'; }
+  else { hintT.textContent = 'Grab // inspect // manipulate'; hintS.textContent = 'Head, chassis, legs, tail and sensor fins follow the cursor · double-click to focus'; }
+  hint.classList.toggle('on', aHint || (T > 5.6 && T < 12.5 && !interacted));
+
+  if (T - lastHudT > .12) {
+    lastHudT = T;
+    updateCardLive();
+    const rpm = Math.round(coreRate * 2400 + Math.sin(T * 7) * 12);
+    $('t-core').textContent = pCore.state === 'mounted' ? Math.max(0, rpm).toLocaleString('en-US').replace(',', ' ') + ' rpm' : 'REMOVED'; $('b-core').style.width = clamp(rpm / 150, 2, 100) + '%';
+    const sl = clamp(Math.round(servoLoad * 100), 0, 94); $('t-servo').textContent = sl + '%'; $('b-servo').style.width = sl + '%';
+    $('t-therm').textContent = temp.toFixed(1) + '°C'; $('b-therm').style.width = clamp((temp - 25) * 3, 2, 100) + '%';
+    $('t-opt').textContent = T < 2.3 ? 'OFFLINE' : pOptic.some(p => p.state !== 'mounted') ? 'DEGRADED' : headMan.mode === 'grab' ? 'MANUAL' : trackW > .5 ? 'LOCK · CURSOR' : aperture < .45 ? 'FOCUS · f/' + (1.4 + (1 - aperture) * 9.6).toFixed(1) : 'TRACKING';
+    const off = PARTS.filter(p => !(p.state === 'mounted' && p.socket === p.home)).length;
+    $('t-sys').textContent = T < 2 ? 'BOOT' : T < 4.4 ? 'CALIBRATING' : grabbed ? 'MANUAL OVERRIDE' : explodeK > .02 ? 'EXPLODED VIEW' : off ? `SERVICE · ${off} OFF` : mode === 'assembly' ? 'ASSEMBLY' : ventOpen > .5 ? 'COOLING' : 'NOMINAL';
+  }
+}
+renderPoseUI();
+
+// ============================================================ LOOP
+let fpsAcc = 0, fpsN = 0, degraded = false, lastFps = 0;
+function frame() {
+  const dt = Math.min(clock.getDelta(), 1 / 20);
+  update(dt); updateCamera(dt); updateHud(dt);
+  composer.render();
+  fpsAcc += dt; fpsN++;
+  if (fpsAcc > 3) {
+    lastFps = fpsN / fpsAcc;
+    if (lastFps < 40 && !degraded && T > 8) { degraded = true; PR = Math.min(PR, 1); renderer.setPixelRatio(PR); composer.setPixelRatio(PR); composer.setSize(innerWidth, innerHeight); }
+    fpsAcc = 0; fpsN = 0;
+  }
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) renderer.setAnimationLoop(null); else { clock.getDelta(); renderer.setAnimationLoop(frame); } });
+
+// warm-up: compile shaders and build dynamic geometry before the reveal
+update(0.0001); updateCamera(0.0001);
+renderer.compile(scene, camera);
+composer.render();
+T = 0; clock.getDelta();
+$('loader').classList.add('hide');
+setTimeout(() => document.querySelectorAll('.intro-hide').forEach(e => e.classList.add('show')), 3200);
+renderer.setAnimationLoop(frame);
+window.__vx = { orbit: a => { orbAz += a; idleOrbit = 0; }, camera, legs, look, headMan, tailMan, bodyMan, tail, PARTS, SOCKETS, hatches, fps: () => lastFps, T: () => T, secS: () => secS, grabbed: () => grabbed && grabbed.name, pickAll, setPose, resetMachine, setMode: m => { mode = m; renderPoseUI(); }, explode: v => { explodeOn = v; renderPoseUI(); }, poseC, focus: () => focus, ikC, zoom: v => { zoomGT = v; }, snap: () => snapInfo && { s: snapInfo.s.name, px: +snapInfo.px.toFixed(1), ok: snapInfo.ok, ready: snapInfo.ready }, view: (az, el) => { orbAz = az * D; orbEl = el * D; orbVAz = orbVEl = 0; idleOrbit = 0; } };
+</script>
+</body>
+</html>

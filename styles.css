@@ -1,0 +1,15 @@
+:root {
+  --bg: #fafaf7;
+  --fg: #1c1c1a;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 16px;
+}
