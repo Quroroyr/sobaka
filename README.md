@@ -46,3 +46,7 @@ npx serve .
 ```
 
 Нужен интернет (Three.js и шрифты грузятся с CDN) и браузер с WebGL.
+
+## Автор
+
+[Quroroyr](https://github.com/Quroroyr)
